@@ -20,7 +20,7 @@ SHOWN = [
     "intensity/t1t2_ratio", "intensity/t1_pct",
     "gaussian/t1_s1_gradmag", "gaussian/t2_s2_hess_e3", "gaussian/t1_s4_lap", "gaussian/t1_dog_2_4",
     "spatial/dist_border", "spatial/dist_midsag",
-    "morpho/t1_tos_depth", "morpho/t1_tos_a1000_compact", "morpho/t2_tophat_black_a500", "morpho/t1_tos_height",
+    "morpho/t1_tos_depth", "morpho/t1_tos_a1000_area_log", "morpho/t1_tos_a10000_resid", "morpho/t1_tos_spher",
     "symmetry/t1_mirror_diff", "context/t1_r2_std",
 ]
 

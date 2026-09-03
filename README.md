@@ -47,16 +47,36 @@ Interfaces attendues côté modèles / post-traitement (résolues dynamiquement 
 | A intensity | `src/features/intensity.py` | 6 | T1/T2 z-scorés dans le masque, ratio (T1−T2)/(T1+T2) sur intensités normalisées par la médiane, différence des z, rangs percentiles |
 | B gaussian | `src/features/gaussian.py` | 68 | σ ∈ {0.5,1,2,4,8} mm × {T1,T2} : lissage, ‖∇‖, laplacien, 3 valeurs propres de la Hessienne triées par \|λ\| (formule analytique vectorisée), différences de gaussiennes ; convolution normalisée par le masque au bord |
 | C spatial | `src/features/spatial.py` | 9 | coordonnées normalisées, distance au bord du masque, distance au plan sagittal médian (PCA, orientation fixée), coordonnées sphériques |
-| D morpho | `src/features/morpho.py` | 58 | arbre des formes 3D auto-dual (higra) : attributs de la plus petite forme contenant le voxel (aire, profondeur, contraste, dynamique, sphéricité, extension), remontée de branche vers les ancêtres de volume ≥ {100, 1000, 10000, 100000}, résidus de filtres de grain {50, 500, 5000} |
+| D morpho | `src/features/morpho.py` | 52 | arbre des formes 3D auto-dual (higra) : attributs de la plus petite forme contenant le voxel (aire, profondeur, contraste, dynamique, sphéricité, extension), puis remontée de branche vers les ancêtres de volume ≥ {100, 1000, 10000, 100000} |
 | E symmetry | `src/features/symmetry.py` | 4 | intensité au point miroir par rapport au plan sagittal médian, et différence voxel − miroir |
 | F context | `src/features/context.py` | 12 | moyenne et écart-type locaux des rangs percentiles (rayons 1, 2, 4 voxels), normalisés par le masque |
 
-Le bloc D est celui qui apporte le contexte non local : l'arbre des formes est auto-dual (T1 et T2
-ont des contrastes inversés et sont traités identiquement), invariant à toute transformation
-croissante de l'intensité, et la remontée de branche donne des descripteurs à toutes les échelles
-anatomiques sans un seul poids appris. Une option `tree: minmax` remplace l'arbre des formes par la
-paire max-tree/min-tree, qui produit deux fois plus de features pour la même information : c'est la
-comparaison qui justifie le choix de l'arbre des formes (voir le tableau d'ablation par palier).
+Le bloc D apporte le contexte non local qui manque aux blocs A, B et C, tous locaux. L'arbre des
+formes est auto-dual, donc T1 et T2 (contrastes inversés) sont traités identiquement par un seul
+arbre ; sa structure est invariante par transformation croissante de l'intensité ; et la remontée de
+branche lit des descripteurs à toutes les échelles anatomiques sans un seul poids appris.
+
+Ablation du bloc D, leave-one-out sur 10 sujets, régression logistique, 5 000 voxels par tissu et
+par sujet, correction des priors (`experiments/logreg_ABC*.yaml`) :
+
+| configuration | features | paramètres | Dice LCR | Dice SG | Dice SB | Dice moyen | Δ |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| A+B+C, référence | 83 | 418 | 0.846 | 0.804 | 0.763 | 0.8046 | — |
+| palier 0, max-tree + min-tree, nœud propre | 107 | 538 | 0.864 | 0.812 | 0.768 | 0.8149 | +0.0103 |
+| palier 1, idem + remontée de branche | 187 | 938 | 0.869 | 0.818 | 0.772 | 0.8198 | +0.0152 |
+| palier 2, arbre des formes + remontée | 135 | 678 | 0.862 | 0.814 | 0.768 | 0.8149 | +0.0103 |
+| palier 3, idem + filtres de grain | 141 | 708 | 0.862 | 0.814 | 0.768 | 0.8148 | +0.0102 |
+| palier 3, quantification 64 niveaux | 141 | 708 | 0.861 | 0.813 | 0.768 | 0.8140 | +0.0095 |
+| palier 3, quantification linéaire | 141 | 708 | 0.867 | 0.817 | 0.769 | 0.8176 | +0.0130 |
+
+Ce que l'ablation a tranché :
+- L'arbre des formes auto-dual atteint 99,4 % du Dice de la paire max-tree/min-tree avec 28 % de
+  paramètres en moins. C'est ce qui compte pour un critère Dice / nombre de paramètres.
+- Les filtres de grain n'apportent rien : leurs résidus font double emploi avec ceux de la remontée
+  de branche. Ils sont désactivés par défaut, l'option reste disponible.
+- La quantification linéaire (percentiles 1 et 99) bat la quantification par rang de 0,003. Elle
+  préserve les amplitudes de contraste ; le rang les égalise. Elle reste invariante au gain et à
+  l'offset d'acquisition, ce qui suffit sur des volumes déjà corrigés en inhomogénéité de champ.
 
 Hyperparamètres fixés a priori (pas appris) : voir `config` de chaque bloc,
 recopié dans chaque JSON de résultats sous `feature_config`.

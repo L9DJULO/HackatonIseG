@@ -63,8 +63,9 @@ def test_self_duality():
 
 
 def test_invariance_to_increasing_transform():
+    """La quantification par rang rend le bloc invariant à toute transformation croissante."""
     s, _ = _noisy_subject()
-    f = MorphoFeatures(levels=64, area_profile=(50,), grain_filters=(20,))
+    f = MorphoFeatures(levels=64, area_profile=(50,), grain_filters=(20,), quantization="rank")
     Xa = f.transform(s)
     v = s.t1 - s.t1.min()
     s.t1 = (v / v.max()) ** 1.7 * 1000
@@ -98,6 +99,17 @@ def test_minmax_fallback_doubles_features_and_matches_interface():
     assert len(f.names) == 2 * 2 * (6 + 5) and X.shape == (s.mask.sum(), len(f.names))
     assert f.names[0] == "t1_maxt_area_log" and "t1_mint_area_log" in f.names
     assert f.n_learned_params == 0 and np.isfinite(X).all()
+
+
+def test_linear_quantization_is_affine_invariant():
+    """Le défaut "linear" reste invariant au gain et à l'offset d'acquisition."""
+    s, _ = _noisy_subject()
+    f = MorphoFeatures(levels=64, area_profile=(500,))
+    assert f.quantization == "linear" and f.grain_filters == ()
+    Xa = f.transform(s)
+    s.t1 = s.t1 * 3.5 + 120.0
+    s.t2 = s.t2 * 0.4 - 7.0
+    assert np.allclose(Xa, f.transform(s), atol=1e-4)
 
 
 def test_rank_quantize_fills_outside_with_median():

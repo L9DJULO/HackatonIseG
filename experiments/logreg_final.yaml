@@ -1,0 +1,18 @@
+# Configuration finale : tous les blocs, bloc D avec ses défauts retenus après ablation
+# (arbre des formes auto-dual, quantification linéaire, sans filtres de grain).
+run_name: logreg_final
+seed: 0
+features:
+  - name: intensity
+  - name: gaussian
+  - name: spatial
+  - name: morpho
+  - name: symmetry
+  - name: context
+model:
+  name: logreg
+  config: {C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 5000
+  boundary_frac: 0.0
+  prior_correction: true
