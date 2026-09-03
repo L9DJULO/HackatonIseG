@@ -1,5 +1,5 @@
-# Ablation : D seul.
-run_name: logreg_morpho
+# Bloc D seul.
+run_name: logreg_D
 seed: 0
 features:
   - name: morpho
@@ -7,6 +7,6 @@ model:
   name: logreg
   config: {C: 1.0, max_iter: 300}
 sampling:
-  n_per_class: 20000
+  n_per_class: 5000
   boundary_frac: 0.0
-  prior_correction: false
+  prior_correction: true

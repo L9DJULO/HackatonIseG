@@ -46,9 +46,9 @@ def load_config(path: Path) -> dict:
 def build_model_factory(model_cfg: dict, seed: int):
     """Résout le modèle par nom.
 
-    Ordre : src.models.registry.build(name, config, seed) s'il existe (côté Arthur), sinon
-    les stubs de src/models/stub.py (random, logreg). Signalé à Arthur : c'est la signature
-    que la CLI attend de son registre.
+    Ordre : src.models.registry.build(name, config, seed) s'il existe, sinon
+    les stubs de src/models/stub.py (random, logreg). C'est la signature
+    que la CLI attend du registre de modèles.
     """
     name, config = model_cfg["name"], dict(model_cfg.get("config", {}))
     try:
@@ -63,7 +63,7 @@ def build_model_factory(model_cfg: dict, seed: int):
 
 
 def build_postproc(steps: list[str]):
-    """Résout src.postproc.topology.apply_postproc(proba_vol, mask, spacing, steps) (côté Arthur)."""
+    """Résout src.postproc.topology.apply_postproc(proba_vol, mask, spacing, steps)."""
     if not steps:
         return None
     topo = importlib.import_module("src.postproc.topology")

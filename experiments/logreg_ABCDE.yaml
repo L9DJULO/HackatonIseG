@@ -1,15 +1,16 @@
-# T3 : tous les blocs, frontière 50 % + correction des priors.
-run_name: logreg_all_boundary_prior
+# Ablation cumulative : A + B + C + D + E.
+run_name: logreg_ABCDE
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
+  - name: symmetry
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}
 sampling:
-  n_per_class: 20000
-  boundary_frac: 0.5
+  n_per_class: 5000
+  boundary_frac: 0.0
   prior_correction: true

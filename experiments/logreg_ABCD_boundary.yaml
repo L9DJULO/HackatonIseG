@@ -1,5 +1,5 @@
-# T3 : tous les blocs, correction des priors à l'inférence.
-run_name: logreg_all_prior
+# A+B+C+D avec 50 % d'exemples de frontière (T3).
+run_name: logreg_ABCD_boundary
 seed: 0
 features:
   - name: intensity
@@ -10,6 +10,6 @@ model:
   name: logreg
   config: {C: 1.0, max_iter: 300}
 sampling:
-  n_per_class: 20000
-  boundary_frac: 0.0
+  n_per_class: 5000
+  boundary_frac: 0.5
   prior_correction: true

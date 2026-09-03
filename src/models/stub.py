@@ -1,11 +1,11 @@
-"""STUBS TEMPORAIRES côté Jules — À SUPPRIMER AU MERGE, remplacés par src/models/* d'Arthur.
+"""Stubs de classifieurs en attendant les vrais modèles (src/models/*).
 
 Deux classifieurs respectant l'interface VoxelClassifier du contrat :
 - RandomStub : prédit au hasard, sert uniquement à tester la plomberie.
 - LogRegStub : régression logistique sklearn, sert aux runs d'ablation bloc par bloc.
   Convention de comptage (forme redondante de sklearn, 3 classes) :
   n_params = coef_.size + intercept_.size = (n_features + 1) * 3.
-  Arthur fixera la convention définitive dans params.py ; celle-ci est surestimée
+  La convention définitive sera fixée dans params.py ; celle-ci est surestimée
   d'un facteur 3/2 par rapport à la paramétrisation minimale (n_features + 1) * 2.
 """
 from __future__ import annotations
@@ -40,7 +40,7 @@ class LogRegStub:
 
     Le StandardScaler ajuste 2 * n_features statistiques sur le train : ce ne sont pas des
     poids de décision mais on les compte quand même dans param_breakdown sous "scaler"
-    pour être irréprochable (Arthur décidera de la convention finale).
+    pour être irréprochable (convention finale à fixer dans params.py).
     """
 
     def __init__(self, C: float = 1.0, max_iter: int = 300, seed: int = 0, count_scaler: bool = True):
