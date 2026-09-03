@@ -1,0 +1,19 @@
+# données : jamais commitées (symlinks dans data/)
+data/
+cache/
+# résultats : les JSON sont commités, pas les volumes ni les images
+results/*.png
+results/proba/
+figures/*.png
+figures/*.pdf
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# macOS
+__MACOSX/
+.DS_Store
+results/*.log
+results/*.done
