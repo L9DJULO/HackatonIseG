@@ -1,6 +1,6 @@
 """Échantillonnage équilibré des voxels d'entraînement + correction des priors.
 
-POINT SUBTIL (à la frontière Jules/Arthur) : si le classifieur est entraîné sur une
+POINT SUBTIL : si le classifieur est entraîné sur une
 distribution rééquilibrée (1/3 par tissu) alors que la vraie distribution est environ
 CSF 22 % / GM 47 % / WM 31 %, ses probabilités sont biaisées. Correction à l'inférence :
     logit_corrigé_c = logit_c + log(prior_réel_c / prior_échantillon_c)

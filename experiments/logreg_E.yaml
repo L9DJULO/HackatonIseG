@@ -1,0 +1,12 @@
+# Bloc E seul.
+run_name: logreg_E
+seed: 0
+features:
+  - name: symmetry
+model:
+  name: logreg
+  config: {C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 5000
+  boundary_frac: 0.0
+  prior_correction: true

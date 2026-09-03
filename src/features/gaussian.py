@@ -9,7 +9,11 @@ Pour chaque modalité (T1, T2 z-scorés dans le masque, 0 hors masque) et chaque
                 (invariance par rotation ; formule analytique vectorisée, pas de eigvalsh).
   dog_a_b     : smooth(sigma_b) - smooth(sigma_a) pour sigmas consécutifs.
 
-Choix fixés a priori (à lister dans le rapport) : sigmas_mm, truncate=4.0, zéro hors masque.
+Gestion du bord du masque (option `border`) :
+  "zero"       : 0 hors masque, le bord du cerveau crée une marche vue par les dérivées.
+  "normalized" : convolution normalisée, G*(I·m) / G*m ; l'extérieur est rempli à chaque
+                 échelle par la moyenne locale intérieure, les dérivées ne voient plus la marche.
+Choix fixés a priori (à lister dans le rapport) : sigmas_mm, truncate=4.0, border.
 Le calcul se fait sur la boîte englobante du masque élargie de 4*sigma_max voxels (identique
 au calcul plein volume, juste plus rapide).
 """
@@ -60,14 +64,28 @@ def sym3x3_eigvals_sorted_abs(a11, a22, a33, a12, a13, a23) -> np.ndarray:
 class GaussianFeatures(FeatureExtractor):
     name = "gaussian"
 
-    def __init__(self, sigmas_mm=(0.5, 1.0, 2.0, 4.0, 8.0), truncate: float = 4.0, modalities=("t1", "t2")):
+    def __init__(
+        self,
+        sigmas_mm=(0.5, 1.0, 2.0, 4.0, 8.0),
+        truncate: float = 4.0,
+        modalities=("t1", "t2"),
+        border: str = "normalized",
+    ):
         self.sigmas_mm = tuple(float(s) for s in sigmas_mm)
         self.truncate = float(truncate)
         self.modalities = tuple(modalities)
+        if border not in ("zero", "normalized"):
+            raise ValueError(border)
+        self.border = border
 
     @property
     def config(self) -> dict:
-        return {"sigmas_mm": list(self.sigmas_mm), "truncate": self.truncate, "modalities": list(self.modalities)}
+        return {
+            "sigmas_mm": list(self.sigmas_mm),
+            "truncate": self.truncate,
+            "modalities": list(self.modalities),
+            "border": self.border,
+        }
 
     @property
     def names(self) -> list[str]:
@@ -80,8 +98,14 @@ class GaussianFeatures(FeatureExtractor):
         return out
 
     def _scale_features(self, vol: np.ndarray, sel: np.ndarray, sigma_vox: tuple[float, ...], sigma_mm: float) -> list[np.ndarray]:
+        if self.border == "normalized":
+            weight = ndimage.gaussian_filter(sel.astype(np.float32), sigma_vox, truncate=self.truncate, mode="constant")
+            filled = ndimage.gaussian_filter(vol, sigma_vox, truncate=self.truncate, mode="constant") / np.maximum(weight, 1e-3)
+            smooth = filled[sel]
+            vol = np.where(sel, vol, filled).astype(np.float32)  # extérieur rempli à cette échelle
         gf = lambda order: ndimage.gaussian_filter(vol, sigma_vox, order=order, truncate=self.truncate, mode="constant")[sel]
-        smooth = gf((0, 0, 0))
+        if self.border == "zero":
+            smooth = gf((0, 0, 0))
         d = [gf(tuple(1 if i == ax else 0 for i in range(3))) for ax in range(3)]
         gradmag = sigma_mm * np.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)
         h = {}

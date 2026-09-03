@@ -19,9 +19,9 @@ def register(cls: type[FeatureExtractor]) -> type[FeatureExtractor]:
 
 def _load_blocks() -> None:
     # imports tardifs pour que chaque bloc reste importable isolément
-    from src.features import gaussian, intensity, morpho, spatial  # noqa: F401
+    from src.features import context, gaussian, intensity, morpho, spatial, symmetry  # noqa: F401
 
-    for mod in (intensity, gaussian, spatial, morpho):
+    for mod in (intensity, gaussian, spatial, morpho, symmetry, context):
         for cls in getattr(mod, "BLOCKS", ()):
             register(cls)
 

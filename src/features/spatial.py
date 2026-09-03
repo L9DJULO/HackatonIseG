@@ -2,6 +2,7 @@
 
 Features :
   x_norm, y_norm, z_norm : coordonnées normalisées dans [0, 1] par la boîte englobante du masque.
+  x_abs                  : |x_norm - 0.5|, version symétrique gauche/droite (sans PCA).
   dist_border            : distance euclidienne (mm) au bord du masque / rayon maximal (max de la
                            transformée de distance) -> [0, 1]. Sépare le LCR périphérique.
   dist_midsag            : distance ABSOLUE au plan sagittal médian, normalisée par la demi-largeur
@@ -48,7 +49,7 @@ class SpatialFeatures(FeatureExtractor):
 
     @property
     def names(self) -> list[str]:
-        return ["x_norm", "y_norm", "z_norm", "dist_border", "dist_midsag", "r_norm", "cos_elev", "azim_abs"]
+        return ["x_norm", "y_norm", "z_norm", "x_abs", "dist_border", "dist_midsag", "r_norm", "cos_elev", "azim_abs"]
 
     def transform(self, subject: Subject) -> np.ndarray:
         mask = subject.mask
@@ -72,7 +73,7 @@ class SpatialFeatures(FeatureExtractor):
         azim_abs = np.abs(np.arctan2(proj[:, 0], proj[:, 1]))
 
         X = np.stack(
-            [xyz_norm[:, 0], xyz_norm[:, 1], xyz_norm[:, 2], dist_border, dist_midsag, r_norm, cos_elev, azim_abs],
+            [xyz_norm[:, 0], xyz_norm[:, 1], xyz_norm[:, 2], np.abs(xyz_norm[:, 0] - 0.5), dist_border, dist_midsag, r_norm, cos_elev, azim_abs],
             axis=1,
         ).astype(np.float32)
         return self._check(subject, X)

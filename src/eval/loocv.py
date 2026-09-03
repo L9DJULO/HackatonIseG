@@ -4,7 +4,7 @@ Pour chaque fold k :
   1. features des 9 autres sujets lues depuis le cache, sous-échantillonnées (sampling.py) ;
   2. fit du classifieur ;
   3. predict_proba sur TOUS les voxels du masque du sujet k (par blocs pour la mémoire) ;
-  4. correction des priors (optionnelle), post-traitement (optionnel, côté Arthur), argmax ;
+  4. correction des priors (optionnelle), post-traitement (optionnel), argmax ;
   5. métriques Dice / ASD / MHD par classe ;
   6. sauvegarde des probabilités en .npz compressé (results/proba/<run>/subject-k.npz).
 Le JSON de résultats est réécrit après chaque fold : une interruption (Ctrl-C) laisse un

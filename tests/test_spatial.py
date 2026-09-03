@@ -26,16 +26,16 @@ def test_principal_axes_orientation_convention():
 def test_spatial_features_ranges_and_symmetry():
     s = ellipsoid_subject()
     X = SpatialFeatures().transform(s)
-    assert X.shape == (s.mask.sum(), 8) and X.dtype == np.float32
-    assert X[:, :6].min() >= 0 and X[:, :6].max() <= 1 + 1e-6
-    assert -1 - 1e-6 <= X[:, 6].min() and X[:, 6].max() <= 1 + 1e-6
+    assert X.shape == (s.mask.sum(), 9) and X.dtype == np.float32
+    assert X[:, :7].min() >= 0 and X[:, :7].max() <= 1 + 1e-6
+    assert -1 - 1e-6 <= X[:, 7].min() and X[:, 7].max() <= 1 + 1e-6
     # symétrie gauche/droite (axe 0) : dist_midsag identique pour un voxel et son miroir
     vol = np.zeros(s.mask.shape, dtype=np.float32)
-    vol[s.mask] = X[:, 4]
+    vol[s.mask] = X[:, 5]
     flipped = vol[::-1]
     sel = s.mask & s.mask[::-1]
     assert np.allclose(vol[sel], flipped[sel], atol=0.05)
     # le centre est à dist_border max (1) et r_norm ~ 0
     center = tuple(d // 2 for d in s.mask.shape)
     row = np.flatnonzero(s.mask) == np.ravel_multi_index(center, s.mask.shape)
-    assert X[row][0, 3] > 0.95 and X[row][0, 5] < 0.05
+    assert X[row][0, 4] > 0.95 and X[row][0, 6] < 0.05

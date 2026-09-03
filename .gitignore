@@ -17,3 +17,6 @@ __MACOSX/
 .DS_Store
 results/*.log
 results/*.done
+# données brutes (jamais commitées)
+iSeg-2017-Training/
+iSeg-2017-Testing/
