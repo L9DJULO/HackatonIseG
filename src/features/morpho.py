@@ -18,8 +18,12 @@ Prétraitement (par sujet, par modalité)
   - voxels hors masque remplacés par la MÉDIANE intra-masque, pour ne pas créer de forme géante
     de fond ; bordure d'un voxel à la même valeur (padding higra "none").
 
-Arbre : hg.component_tree_tree_of_shapes_image3d, immersion Khalimsky 6-connexe, une feuille par
-voxel. Le "nœud propre" d'un voxel est la plus petite forme qui le contient.
+Arbre (option `tree`)
+  "tos"    arbre des formes, hg.component_tree_tree_of_shapes_image3d, immersion Khalimsky
+           6-connexe, une feuille par voxel. Un seul arbre auto-dual par modalité.
+  "minmax" max-tree ET min-tree 6-connexes (voie de repli, deux fois plus de features pour la
+           même information : c'est la comparaison qui justifie le choix de l'arbre des formes).
+Le "nœud propre" d'un voxel est la plus petite forme/composante qui le contient.
 
 Attributs de nœud (tous sans dimension)
   area_log    log10(volume du nœud / volume du masque)
@@ -42,9 +46,10 @@ Features par voxel et par modalité
   3. filtres de grain auto-duaux : on supprime les formes de volume < G pour G dans
      `grain_filters` et on reconstruit ; feature = image - image filtrée (résidu signé) (1 par G)
 
-Valeurs fixées a priori (défaut) : levels = 256, quantization = "rank",
+Valeurs fixées a priori (défaut) : tree = "tos", levels = 256, quantization = "rank",
 area_profile = (100, 1000, 10000, 100000) voxels, grain_filters = (50, 500, 5000) voxels,
-modalities = (t1, t2), adjacence 6. Soit 2 x (6 + 4 x 5 + 3) = 58 features.
+modalities = (t1, t2), adjacence 6. Soit 2 x (6 + 4 x 5 + 3) = 58 features
+(le double avec tree = "minmax").
 """
 from __future__ import annotations
 
@@ -95,11 +100,19 @@ def first_ancestor_with_area(parents: np.ndarray, area: np.ndarray, start: np.nd
         cur[small] = nxt
 
 
-def build_tree(q: np.ndarray):
-    """Arbre des formes 3D d'un volume quantifié DÉJÀ bordé (padding higra désactivé)."""
+def build_tree(q: np.ndarray, kind: str = "tos") -> list[tuple]:
+    """Arbres d'un volume quantifié DÉJÀ bordé. Retourne une liste de (tree, altitudes).
+
+    "tos" -> un seul arbre des formes (auto-dual) ; "minmax" -> [max-tree, min-tree].
+    """
     import higra as hg
 
-    return hg.component_tree_tree_of_shapes_image3d(q, padding="none", original_size=True, immersion=True)
+    if kind == "tos":
+        return [hg.component_tree_tree_of_shapes_image3d(q, padding="none", original_size=True, immersion=True)]
+    if kind == "minmax":
+        g = hg.get_6_adjacency_graph(q.shape)
+        return [hg.component_tree_max_tree(g, q), hg.component_tree_min_tree(g, q)]
+    raise ValueError(kind)
 
 
 def node_attributes(tree, altitudes: np.ndarray, shape: tuple[int, ...], levels: int, n_mask: int, extent_ref: float) -> dict:
@@ -137,6 +150,7 @@ class MorphoFeatures(FeatureExtractor):
         self,
         levels: int = 256,
         quantization: str = "rank",
+        tree: str = "tos",
         area_profile=(100, 1000, 10000, 100000),
         grain_filters=(50, 500, 5000),
         modalities=("t1", "t2"),
@@ -144,6 +158,9 @@ class MorphoFeatures(FeatureExtractor):
     ):
         if quantization not in ("rank", "linear"):
             raise ValueError(quantization)
+        if tree not in ("tos", "minmax"):
+            raise ValueError(tree)
+        self.tree = tree
         self.levels = int(levels)
         self.quantization = quantization
         self.area_profile = tuple(int(a) for a in area_profile)
@@ -155,6 +172,7 @@ class MorphoFeatures(FeatureExtractor):
     def config(self) -> dict:
         return {
             "version": VERSION,
+            "tree": self.tree,
             "levels": self.levels,
             "quantization": self.quantization,
             "area_profile": list(self.area_profile),
@@ -166,15 +184,20 @@ class MorphoFeatures(FeatureExtractor):
         }
 
     @property
+    def tree_tags(self) -> tuple[str, ...]:
+        return ("tos",) if self.tree == "tos" else ("maxt", "mint")
+
+    @property
     def names(self) -> list[str]:
         out = []
         for mod in self.modalities:
-            if self.leaf_attributes:
-                out += [f"{mod}_tos_{k}" for k in ("area_log", "depth", "contrast", "height", "spher", "extent")]
-            for a in self.area_profile:
-                out += [f"{mod}_tos_a{a}_{k}" for k in ("area_log", "height", "resid", "depth", "spher")]
-            for g in self.grain_filters:
-                out.append(f"{mod}_grain{g}_resid")
+            for tag in self.tree_tags:
+                if self.leaf_attributes:
+                    out += [f"{mod}_{tag}_{k}" for k in ("area_log", "depth", "contrast", "height", "spher", "extent")]
+                for a in self.area_profile:
+                    out += [f"{mod}_{tag}_a{a}_{k}" for k in ("area_log", "height", "resid", "depth", "spher")]
+                for g in self.grain_filters:
+                    out.append(f"{mod}_{tag}_grain{g}_resid")
         return out
 
     def quantize(self, vol: np.ndarray, mask: np.ndarray) -> np.ndarray:
@@ -187,23 +210,23 @@ class MorphoFeatures(FeatureExtractor):
 
         fill = int(np.median(q[mask]))
         qp = np.pad(q, 1, mode="constant", constant_values=fill)
-        tree, alt = build_tree(qp)
         n_mask = int(mask.sum())
         extent_ref = float(max(mask.shape))
-        A = node_attributes(tree, alt, qp.shape, self.levels, n_mask, extent_ref)
         sel = np.pad(mask, 1, mode="constant", constant_values=False).reshape(-1)
         leaves = np.flatnonzero(sel)
-        node = A["parents"][leaves]  # nœud propre de chaque voxel du masque
-        leaf_alt = A["alt"][leaves]
         feats: list[np.ndarray] = []
-        if self.leaf_attributes:
-            feats += [A[k][node] for k in ("area_log", "depth", "contrast", "height", "spher", "extent")]
-        for a in self.area_profile:
-            anc = first_ancestor_with_area(A["parents"], A["area"], node, a)
-            feats += [A["area_log"][anc], A["height"][anc], leaf_alt - A["alt"][anc], A["depth"][anc], A["spher"][anc]]
-        for g in self.grain_filters:
-            filtered = hg.reconstruct_leaf_data(tree, alt, A["area"] < g).astype(np.float64) / (self.levels - 1)
-            feats.append(leaf_alt - filtered.reshape(-1)[leaves])
+        for tree, alt in build_tree(qp, self.tree):
+            A = node_attributes(tree, alt, qp.shape, self.levels, n_mask, extent_ref)
+            node = A["parents"][leaves]  # nœud propre de chaque voxel du masque
+            leaf_alt = A["alt"][leaves]
+            if self.leaf_attributes:
+                feats += [A[k][node] for k in ("area_log", "depth", "contrast", "height", "spher", "extent")]
+            for a in self.area_profile:
+                anc = first_ancestor_with_area(A["parents"], A["area"], node, a)
+                feats += [A["area_log"][anc], A["height"][anc], leaf_alt - A["alt"][anc], A["depth"][anc], A["spher"][anc]]
+            for g in self.grain_filters:
+                filtered = hg.reconstruct_leaf_data(tree, alt, A["area"] < g).astype(np.float64) / (self.levels - 1)
+                feats.append(leaf_alt - filtered.reshape(-1)[leaves])
         return [f.astype(np.float32) for f in feats]
 
     def transform(self, subject: Subject) -> np.ndarray:

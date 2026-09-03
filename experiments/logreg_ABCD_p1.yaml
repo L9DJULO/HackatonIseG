@@ -1,12 +1,13 @@
-# Ablation cumulative : A + B + C + D + E.
-run_name: logreg_ABCDE
+# Palier 1 : max-tree + min-tree + remontée de branche (4 échelles d'aire).
+run_name: logreg_ABCD_p1
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
-  - name: symmetry
+    tree: minmax
+    grain_filters: []
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}

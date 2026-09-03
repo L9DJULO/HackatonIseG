@@ -1,15 +1,16 @@
-# A+B+C+D sans correction des priors (T3).
-run_name: logreg_ABCD_noprior
+# Palier 2 : arbre des formes auto-dual + remontée de branche (moitié moins de features).
+run_name: logreg_ABCD_p2
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
+    grain_filters: []
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}
 sampling:
   n_per_class: 5000
   boundary_frac: 0.0
-  prior_correction: false
+  prior_correction: true

@@ -1,5 +1,5 @@
-# A+B+C+D avec 50 % d'exemples de frontière (T3).
-run_name: logreg_ABCD_boundary
+# Palier 3 : arbre des formes + remontée + filtres de grain (bloc D complet).
+run_name: logreg_ABCD_p3
 seed: 0
 features:
   - name: intensity
@@ -11,5 +11,5 @@ model:
   config: {C: 1.0, max_iter: 300}
 sampling:
   n_per_class: 5000
-  boundary_frac: 0.5
+  boundary_frac: 0.0
   prior_correction: true

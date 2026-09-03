@@ -1,8 +1,12 @@
-# Bloc C seul.
-run_name: logreg_C
+# Ablation de la quantification : 64 niveaux au lieu de 256.
+run_name: logreg_ABCD_p3_l64
 seed: 0
 features:
+  - name: intensity
+  - name: gaussian
   - name: spatial
+  - name: morpho
+    levels: 64
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}

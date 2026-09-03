@@ -1,4 +1,4 @@
-# Ablation cumulative : A + B + C.
+# Référence de l'ablation du bloc D : A + B + C, sans morphologie.
 run_name: logreg_ABC
 seed: 0
 features:

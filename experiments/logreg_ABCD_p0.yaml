@@ -1,13 +1,15 @@
-# Tous les blocs : A + B + C + D + E + F.
-run_name: logreg_ABCDEF
+# Palier 0 : max-tree + min-tree, attributs du nœud propre seulement (pas de remontée).
+run_name: logreg_ABCD_p0
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
-  - name: symmetry
-  - name: context
+    tree: minmax
+    leaf_attributes: true
+    area_profile: []
+    grain_filters: []
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}

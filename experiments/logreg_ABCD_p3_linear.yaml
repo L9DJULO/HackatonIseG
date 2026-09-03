@@ -1,11 +1,12 @@
-# Ablation cumulative : A + B + C + D.
-run_name: logreg_ABCD
+# Ablation de la quantification : niveaux linéaires (percentiles 1-99) au lieu des rangs.
+run_name: logreg_ABCD_p3_linear
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
+    quantization: linear
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}

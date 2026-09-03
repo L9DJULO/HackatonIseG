@@ -16,7 +16,7 @@ def concentric(shape=(41, 41, 41), radii=(15, 8), levels=(2, 1)):
 
 def test_tree_depth_and_areas_on_concentric_spheres():
     q, r = concentric()
-    tree, alt = build_tree(q)
+    (tree, alt), = build_tree(q)
     A = node_attributes(tree, alt, q.shape, levels=3, n_mask=q.size, extent_ref=41.0)
     center = np.ravel_multi_index((20, 20, 20), q.shape)
     inner = A["parents"][center]
@@ -89,6 +89,15 @@ def test_output_shape_order_and_zero_params():
     assert X[core, f.names.index("t2_tos_a500_resid")].mean() < 0
     # les formes propres du cœur sont bien plus petites que le masque : log10(aire / |masque|) < 0
     assert X[core, f.names.index("t1_tos_area_log")].mean() < 0
+
+
+def test_minmax_fallback_doubles_features_and_matches_interface():
+    s, _ = _noisy_subject()
+    f = MorphoFeatures(levels=64, area_profile=(500,), grain_filters=(), tree="minmax")
+    X = f.transform(s)
+    assert len(f.names) == 2 * 2 * (6 + 5) and X.shape == (s.mask.sum(), len(f.names))
+    assert f.names[0] == "t1_maxt_area_log" and "t1_mint_area_log" in f.names
+    assert f.n_learned_params == 0 and np.isfinite(X).all()
 
 
 def test_rank_quantize_fills_outside_with_median():
