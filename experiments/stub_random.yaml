@@ -1,0 +1,11 @@
+# Plomberie : stub aléatoire + bloc intensity. Dice attendu ~0.3, c'est normal.
+run_name: stub_random
+seed: 0
+features:
+  - name: intensity
+model:
+  name: random
+sampling:
+  n_per_class: 2000
+save_proba: true
+with_distances: true

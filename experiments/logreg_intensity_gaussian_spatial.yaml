@@ -1,0 +1,14 @@
+# Ablation : blocs A + B + C.
+run_name: logreg_intensity_gaussian_spatial
+seed: 0
+features:
+  - name: intensity
+  - name: gaussian
+  - name: spatial
+model:
+  name: logreg
+  config: {C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 20000
+  boundary_frac: 0.0
+  prior_correction: false

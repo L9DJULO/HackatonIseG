@@ -1,0 +1,12 @@
+# Ablation, bloc A seul : régression logistique sur les 5 features d'intensité.
+run_name: logreg_intensity
+seed: 0
+features:
+  - name: intensity
+model:
+  name: logreg
+  config: {C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 20000
+  boundary_frac: 0.0
+  prior_correction: false

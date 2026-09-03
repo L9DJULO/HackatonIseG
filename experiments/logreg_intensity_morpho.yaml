@@ -1,0 +1,13 @@
+# Ablation : A + D pour isoler l'apport du bloc morphologique.
+run_name: logreg_intensity_morpho
+seed: 0
+features:
+  - name: intensity
+  - name: morpho
+model:
+  name: logreg
+  config: {C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 20000
+  boundary_frac: 0.0
+  prior_correction: false
