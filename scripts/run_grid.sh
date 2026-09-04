@@ -9,5 +9,5 @@ for r in $RUNS; do
   $PY -u -m src.cli features experiments/$r.yaml >> results/features.log 2>&1
   $PY -u -m src.cli run experiments/$r.yaml > results/$r.log 2>&1
 done
-$PY scripts/ablation_table.py > results/ablation.md
+$PY scripts/report_assets.py
 echo DONE > results/grid.done
