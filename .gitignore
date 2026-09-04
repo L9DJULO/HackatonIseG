@@ -20,3 +20,11 @@ results/*.done
 # données brutes (jamais commitées)
 iSeg-2017-Training/
 iSeg-2017-Testing/
+# rapport : intermédiaires LaTeX. Le .tex de pandoc est éphémère, ne jamais l'éditer.
+report/rapport.tex
+report/*.aux
+report/*.log
+report/*.out
+report/*.bbl
+report/*.blg
+report/*.toc

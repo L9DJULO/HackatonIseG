@@ -1,0 +1,41 @@
+% ---------------------------------------------------------------------------
+% Préambule LaTeX du rapport. Injecté par pandoc (--include-in-header).
+% ---------------------------------------------------------------------------
+
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+
+% --- tableaux : un peu d'air, et des colonnes qui ne débordent pas ----------
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+
+% --- légendes ---------------------------------------------------------------
+\captionsetup{font=small, labelfont=bf, labelsep=period, skip=6pt}
+
+% --- listes serrées ---------------------------------------------------------
+\setlist{itemsep=2pt, parsep=0pt, topsep=4pt, leftmargin=1.4em}
+
+% --- encadré ----------------------------------------------------------------
+\newtcolorbox{encadre}[1]{%
+  breakable, enhanced, sharp corners,
+  colback=black!2, colframe=black!60, boxrule=0.6pt,
+  left=9pt, right=9pt, top=7pt, bottom=7pt,
+  fonttitle=\bfseries\small, coltitle=black, colbacktitle=black!10,
+  attach boxed title to top left={yshift=0pt, xshift=0pt},
+  boxed title style={sharp corners, boxrule=0.6pt, colframe=black!60},
+  title={#1}}
+
+% --- renvois en français ----------------------------------------------------
+\newcommand{\figref}[1]{figure~\ref{#1}}
+\newcommand{\tabref}[1]{tableau~\ref{#1}}
+\newcommand{\secref}[1]{section~\ref{#1}}
+\newcommand{\eqnref}[1]{équation~(\ref{#1})}
+
+% --- notations récurrentes --------------------------------------------------
+\newcommand{\T}[1]{\ensuremath{\mathrm{T}#1}}
+
+% --- nommage français des flottants -----------------------------------------
+\AtBeginDocument{\renewcommand{\tablename}{Tableau}}

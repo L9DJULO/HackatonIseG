@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 CLI := $(PY) -m src.cli
 
-.PHONY: venv test inspect blocks features grid report-assets cost figures clean-cache
+.PHONY: venv test inspect blocks features grid report-assets cost figures report-facts report-figures pdf clean-cache
 
 venv:
 	python3 -m venv .venv && .venv/bin/pip install -U pip && .venv/bin/pip install -r requirements.txt
@@ -35,5 +35,32 @@ cost:
 figures:
 	$(PY) scripts/plot_features.py 1
 
+# recouvrement SG/SB sur les 10 sujets + classement par ratio brut (sections 1 et 2)
+report-facts:
+	$(PY) scripts/isointensity.py
+	$(PY) scripts/ratio_argument.py
+
+# figures 1 a 3 du rapport, en PDF vectoriel dans report/assets/
+report-figures:
+	$(PY) scripts/fig01_isointense.py
+	$(PY) scripts/fig02_pipeline.py
+	$(PY) scripts/fig03_shapes.py
+
 clean-cache:
 	rm -rf cache/*
+
+# ---------------------------------------------------------------------------
+# Rapport : source Markdown -> PDF via pandoc + xelatex
+# ---------------------------------------------------------------------------
+PANDOC_FLAGS := --from=markdown+raw_tex+tex_math_dollars \
+                --pdf-engine=xelatex \
+                --citeproc --bibliography=report/refs.bib \
+                --include-in-header=report/preamble.tex
+
+REPORT_DEPS := report/rapport.md report/refs.bib report/preamble.tex \
+               $(wildcard report/assets/*.pdf)
+
+pdf: report/rapport.pdf
+
+report/rapport.pdf: $(REPORT_DEPS)
+	pandoc report/rapport.md -o $@ $(PANDOC_FLAGS)
