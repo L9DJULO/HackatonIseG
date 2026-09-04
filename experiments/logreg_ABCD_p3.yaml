@@ -1,4 +1,4 @@
-# Palier 3 : arbre des formes + remontée + filtres de grain (bloc D complet).
+# Palier 3 : palier 2 + filtres de grain. Mesure l'apport des filtres de grain seuls.
 run_name: logreg_ABCD_p3
 seed: 0
 features:
@@ -6,6 +6,7 @@ features:
   - name: gaussian
   - name: spatial
   - name: morpho
+    grain_filters: [50, 500, 5000]
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}

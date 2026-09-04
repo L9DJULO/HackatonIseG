@@ -21,6 +21,7 @@ from typing import Callable
 import numpy as np
 
 from src.eval.metrics import evaluate_subject
+from src.features.normalize import apply_stats, subject_stats
 from src.features.registry import ComposedExtractor
 from src.io import TISSUE_CLASSES, Subject, load_subject, mask_to_volume
 from src.sampling import adjust_priors, class_priors, sample_voxels
@@ -29,11 +30,11 @@ PostprocFn = Callable[[np.ndarray, np.ndarray, tuple], np.ndarray]
 """postproc(proba_volume (D,H,W,3) float32, mask (D,H,W) bool, spacing) -> label volume uint8 (0..3)."""
 
 
-def predict_full(model, X: np.ndarray, chunk: int = 200_000) -> np.ndarray:
-    """predict_proba par blocs de lignes (X peut être un memmap)."""
+def predict_full(model, X: np.ndarray, stats=None, chunk: int = 200_000) -> np.ndarray:
+    """predict_proba par blocs de lignes (X peut être un memmap), features standardisées."""
     out = np.empty((X.shape[0], 3), dtype=np.float32)
     for start in range(0, X.shape[0], chunk):
-        out[start : start + chunk] = model.predict_proba(np.asarray(X[start : start + chunk], dtype=np.float32))
+        out[start : start + chunk] = model.predict_proba(apply_stats(X[start : start + chunk], stats))
     return out
 
 
@@ -43,12 +44,14 @@ def build_training_set(
     n_per_class: int,
     boundary_frac: float,
     rng: np.random.Generator,
+    stats: dict[int, tuple] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Chaque sujet est standardisé par SES PROPRES statistiques avant concaténation."""
     Xs, ys = [], []
     for s in subjects:
         idx, y = sample_voxels(s, n_per_class, rng, boundary_frac=boundary_frac)
         order = np.argsort(idx)
-        Xs.append(extractor.transform_rows(s, idx[order]))
+        Xs.append(apply_stats(extractor.transform_rows(s, idx[order]), (stats or {}).get(s.subject_id)))
         ys.append(y[order])
     return np.concatenate(Xs), np.concatenate(ys)
 
@@ -66,6 +69,7 @@ def run_loocv(
     run_name: str,
     data_root: Path,
     results_dir: Path,
+    cache_dir: Path | None = None,
     subject_ids: list[int] = tuple(range(1, 11)),
     seed: int = 0,
     n_per_class: int = 20_000,
@@ -75,6 +79,7 @@ def run_loocv(
     postproc_names: list[str] | None = None,
     save_proba: bool = True,
     with_distances: bool = True,
+    standardize: str = "per_subject",
     model_name: str = "?",
     model_config: dict | None = None,
     extra: dict | None = None,
@@ -90,6 +95,13 @@ def run_loocv(
     for s in subjects.values():
         extractor.transform(s)
     print(f"[{run_name}] features prêtes ({extractor.n_features} colonnes) en {time.time() - t0:.1f}s")
+    stats = None
+    if standardize == "per_subject":
+        t0 = time.time()
+        stats = {sid: subject_stats(extractor, s, cache_dir=cache_dir) for sid, s in subjects.items()}
+        print(f"[{run_name}] statistiques intra-sujet prêtes en {time.time() - t0:.1f}s")
+    elif standardize != "none":
+        raise ValueError(standardize)
 
     result: dict = {
         "run_name": run_name,
@@ -105,6 +117,7 @@ def run_loocv(
         "n_params": None,
         "n_params_breakdown": {},
         "sampling": {"n_per_class": n_per_class, "boundary_frac": boundary_frac, "prior_correction": prior_correction},
+        "standardize": standardize,
         "postproc": postproc_names or [],
         "per_subject": {},
         "completed_folds": [],
@@ -124,7 +137,7 @@ def run_loocv(
             t_fold = time.time()
             rng = np.random.default_rng(seed * 1000 + test_id)
             train_subjects = [subjects[s] for s in subject_ids if s != test_id]
-            X, y = build_training_set(extractor, train_subjects, n_per_class, boundary_frac, rng)
+            X, y = build_training_set(extractor, train_subjects, n_per_class, boundary_frac, rng, stats)
             t1 = time.time()
             model = model_factory()
             model.fit(X, y)
@@ -132,7 +145,7 @@ def run_loocv(
 
             test = subjects[test_id]
             t2 = time.time()
-            proba = predict_full(model, extractor.transform(test))
+            proba = predict_full(model, extractor.transform(test), (stats or {}).get(test_id))
             if prior_correction:
                 sampled = np.array([np.mean(y == c) for c in TISSUE_CLASSES])
                 proba = adjust_priors(proba, sampled, class_priors(train_subjects))

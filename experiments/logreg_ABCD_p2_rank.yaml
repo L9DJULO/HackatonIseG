@@ -1,12 +1,12 @@
-# Ablation de la quantification : 64 niveaux au lieu de 256.
-run_name: logreg_ABCD_p3_l64
+# Ablation : quantification par rang au lieu de linéaire, tout le reste identique au palier 2.
+run_name: logreg_ABCD_p2_rank
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
-    levels: 64
+    quantization: rank
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}

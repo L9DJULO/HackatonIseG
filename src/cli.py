@@ -28,6 +28,7 @@ DEFAULTS = {
     "postproc": [],
     "save_proba": True,
     "with_distances": True,
+    "standardize": "per_subject",
 }
 
 
@@ -83,6 +84,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         run_name=cfg["run_name"],
         data_root=ROOT / cfg["data_root"],
         results_dir=ROOT / cfg["results_dir"],
+        cache_dir=ROOT / cfg["cache_dir"],
         subject_ids=cfg["subjects"],
         seed=cfg["seed"],
         n_per_class=cfg["sampling"]["n_per_class"],
@@ -92,6 +94,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         postproc_names=cfg["postproc"],
         save_proba=cfg["save_proba"],
         with_distances=cfg["with_distances"],
+        standardize=cfg["standardize"],
         model_name=cfg["model"]["name"],
         model_config=cfg["model"].get("config", {}),
         extra={"config_file": str(args.config)},

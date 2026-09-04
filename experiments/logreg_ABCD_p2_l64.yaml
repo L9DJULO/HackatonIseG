@@ -1,12 +1,12 @@
-# Ablation de la quantification : niveaux linéaires (percentiles 1-99) au lieu des rangs.
-run_name: logreg_ABCD_p3_linear
+# Ablation : quantification sur 64 niveaux au lieu de 256, tout le reste identique au palier 2.
+run_name: logreg_ABCD_p2_l64
 seed: 0
 features:
   - name: intensity
   - name: gaussian
   - name: spatial
   - name: morpho
-    quantization: linear
+    levels: 64
 model:
   name: logreg
   config: {C: 1.0, max_iter: 300}
