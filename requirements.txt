@@ -1,8 +1,11 @@
-numpy>=1.26
-scipy>=1.11
-scikit-learn>=1.4
-nibabel>=5.0
-matplotlib>=3.8
-pyyaml>=6.0
-higra>=0.6
-pytest>=8.0
+# Versions épinglées sur l'environnement de référence (Python 3.12).
+higra==0.6.13
+matplotlib==3.11.1
+nibabel==5.4.2
+numpy==2.5.2
+PyYAML==6.0.3
+scikit-learn==1.9.0
+scipy==1.18.1
+
+# développement
+pytest==9.1.1
