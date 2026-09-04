@@ -1,0 +1,53 @@
+{
+ "run_name": "logreg_final",
+ "subject_id": 1,
+ "blocks": {
+  "intensity": {
+   "seconds": 0.27,
+   "n_features": 6,
+   "megabytes_float32": 22.1,
+   "peak_rss_gb": 0.25
+  },
+  "gaussian": {
+   "seconds": 17.76,
+   "n_features": 68,
+   "megabytes_float32": 250.6,
+   "peak_rss_gb": 1.57
+  },
+  "spatial": {
+   "seconds": 1.81,
+   "n_features": 9,
+   "megabytes_float32": 33.2,
+   "peak_rss_gb": 1.57
+  },
+  "morpho": {
+   "seconds": 23.49,
+   "n_features": 52,
+   "megabytes_float32": 191.7,
+   "peak_rss_gb": 1.57
+  },
+  "symmetry": {
+   "seconds": 0.46,
+   "n_features": 4,
+   "megabytes_float32": 14.7,
+   "peak_rss_gb": 1.57
+  },
+  "context": {
+   "seconds": 0.72,
+   "n_features": 12,
+   "megabytes_float32": 44.2,
+   "peak_rss_gb": 1.57
+  }
+ },
+ "extract_seconds_per_subject": 44.51,
+ "extract_peak_rss_gb": 1.57,
+ "training_set_seconds": 198.47,
+ "training_set_rows": 135000,
+ "fit_seconds": 63.32,
+ "n_params": 456,
+ "inference_seconds_per_volume": 1.29,
+ "n_voxels_in_mask": 921422,
+ "peak_rss_gb": 3.28,
+ "model_size_kilobytes": 2.5,
+ "model_weights_kilobytes": 3.56
+}

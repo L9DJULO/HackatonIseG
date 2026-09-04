@@ -1,0 +1,35 @@
+{
+ "run_name": "logreg_ABC",
+ "subject_id": 1,
+ "blocks": {
+  "intensity": {
+   "seconds": 0.27,
+   "n_features": 6,
+   "megabytes_float32": 22.1,
+   "peak_rss_gb": 0.25
+  },
+  "gaussian": {
+   "seconds": 17.16,
+   "n_features": 68,
+   "megabytes_float32": 250.6,
+   "peak_rss_gb": 1.57
+  },
+  "spatial": {
+   "seconds": 1.68,
+   "n_features": 9,
+   "megabytes_float32": 33.2,
+   "peak_rss_gb": 1.57
+  }
+ },
+ "extract_seconds_per_subject": 19.12,
+ "extract_peak_rss_gb": 1.57,
+ "training_set_seconds": 17.37,
+ "training_set_rows": 135000,
+ "fit_seconds": 44.19,
+ "n_params": 252,
+ "inference_seconds_per_volume": 0.97,
+ "n_voxels_in_mask": 921422,
+ "peak_rss_gb": 1.58,
+ "model_size_kilobytes": 1.7,
+ "model_weights_kilobytes": 1.97
+}
