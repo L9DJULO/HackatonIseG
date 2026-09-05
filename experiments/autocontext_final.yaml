@@ -1,0 +1,22 @@
+# Auto-contexte à deux étages sur la configuration finale, avec K-fold interne à 3 plis sur les
+# 9 sujets d'entraînement de chaque pli externe (src/models/autocontext.py).
+# Paramètres attendus : 3*(151+1) + 3*(151+9+1) = 456 + 483 = 939.
+# NON ENCORE EXÉCUTÉE : aucun JSON correspondant dans results/.
+run_name: autocontext_final
+seed: 0
+features:
+  - name: intensity
+  - name: gaussian
+  - name: spatial
+  - name: morpho
+  - name: symmetry
+  - name: context
+model:
+  name: autocontext
+  config:
+    n_inner_folds: 3
+    base: {name: logreg, C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 5000
+  boundary_frac: 0.0
+  prior_correction: true

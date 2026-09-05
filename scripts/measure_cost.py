@@ -13,6 +13,7 @@ import json
 import pickle
 import resource
 import sys
+import platform
 import time
 from pathlib import Path
 
@@ -35,7 +36,8 @@ def peak_rss_gb() -> float:
 def main(config_path: str, subject_id: int = 1) -> None:
     cfg = load_config(Path(config_path))
     subject = load_subject(subject_id, ROOT / cfg["data_root"])
-    out = {"run_name": cfg["run_name"], "subject_id": subject_id, "blocks": {}}
+    out = {
+        "machine": f"{platform.node()} / {platform.machine()} / python {platform.python_version()}","run_name": cfg["run_name"], "subject_id": subject_id, "blocks": {}}
 
     # 1. extraction, bloc par bloc, cache contourné pour chronométrer le calcul réel
     total_extract = 0.0
@@ -63,7 +65,7 @@ def main(config_path: str, subject_id: int = 1) -> None:
     stats = {s.subject_id: subject_stats(ext, s, cache_dir=ROOT / cfg["cache_dir"]) for s in subjects}
     rng = np.random.default_rng(0)
     t0 = time.perf_counter()
-    X, y = build_training_set(ext, subjects, cfg["sampling"]["n_per_class"], cfg["sampling"]["boundary_frac"], rng, stats)
+    X, y, _ = build_training_set(ext, subjects, cfg["sampling"]["n_per_class"], cfg["sampling"]["boundary_frac"], rng, stats)
     out["training_set_seconds"] = round(time.perf_counter() - t0, 2)
     out["training_set_rows"] = int(X.shape[0])
 

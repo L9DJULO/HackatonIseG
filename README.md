@@ -34,8 +34,9 @@ Le critère du projet met le Dice en regard du nombre de paramètres. Ce rapport
 être présenté comme un ratio à maximiser : un ratio Dice sur paramètres est toujours maximisé par
 le modèle le plus petit, et il désignerait vainqueur un modèle qui prédit la classe majoritaire.
 Le cadrage correct est le front de Pareto, et la comparaison d'ordre de grandeur avec les méthodes
-publiées du challenge, qui emploient entre 10⁵ et 10⁷ paramètres là où nous en avons quelques
-centaines.
+publiées du challenge : la méthode classée première en compte 1,55 · 10⁶ (chiffre publié dans
+l'article de synthèse du challenge), et les architectures des autres participations situent
+l'ensemble entre 10⁶ et 10⁸, là où nous en avons quelques centaines.
 
 La convention de comptage est écrite dans `src/models/params.py` : comptent les quantités ajustées
 sur les sujets d'entraînement et transportées à l'inférence ; ne comptent pas celles recalculées

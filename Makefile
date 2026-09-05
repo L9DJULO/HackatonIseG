@@ -40,11 +40,16 @@ report-facts:
 	$(PY) scripts/isointensity.py
 	$(PY) scripts/ratio_argument.py
 
-# figures 1 a 3 du rapport, en PDF vectoriel dans report/assets/
+# figures 1 a 3 du rapport (donnees requises), en PDF vectoriel dans report/assets/
 report-figures:
 	$(PY) scripts/fig01_isointense.py
 	$(PY) scripts/fig02_pipeline.py
 	$(PY) scripts/fig03_shapes.py
+
+# figures 4 et 5 : construites uniquement depuis results/*.json, aucune donnee requise
+report-figures-results:
+	$(PY) scripts/fig04_pareto.py
+	$(PY) scripts/fig05_ablation.py
 
 clean-cache:
 	rm -rf cache/*
