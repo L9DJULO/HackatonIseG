@@ -17,7 +17,8 @@ abstract: |
   appris, et une variante à 163 paramètres en atteint encore 0,8036 ; la méthode classée
   première du challenge emploie 1,55 million de paramètres. Nous montrons pourquoi le rapport
   brut du Dice au nombre de paramètres ne peut pas servir de critère de sélection, nous lui
-  substituons un front de Pareto, et nous rapportons trois résultats négatifs : l'auto-dualité
+  substituons une lecture en ordres de grandeur, assez grossière pour ne dépendre d'aucune
+  convention de comptage, et un front de Pareto ; et nous rapportons trois résultats négatifs : l'auto-dualité
   de l'arbre des formes ne produit aucun gain de Dice distinguable, notre post-traitement
   topologique dégrade la segmentation parce qu'il repose sur une hypothèse anatomique fausse aux
   ventricules, et la quantification à 64 niveaux ne fait économiser rien de mesurable. Nos
@@ -96,8 +97,8 @@ l'auto-contexte décrit en \secref{sec:classifieur}, obtient un Dice moyen de $0
 méthode classée première du challenge en emploie un million et demi.
 
 La suite est organisée ainsi. La \secref{sec:probleme} pose les données, la limite
-d'évaluation qu'elles imposent, et explique pourquoi le ratio brut du Dice sur le nombre de
-paramètres ne peut pas servir de critère de sélection. La \secref{sec:methode} décrit la
+d'évaluation qu'elles imposent, et explique pourquoi nous lisons le critère du hackathon en
+ordres de grandeur plutôt qu'en ratio brut. La \secref{sec:methode} décrit la
 méthode : le principe de déplacement de l'information, les six blocs de descripteurs,
 l'arbre des formes et la remontée de branche, le classifieur, et la convention de comptage
 des paramètres. Les sections suivantes donnent le protocole, les résultats et la
@@ -115,52 +116,82 @@ chiffres ne sont donc pas directement comparables aux scores publiés du challen
 calculés par le serveur d'évaluation sur ces treize sujets. Nous préférons le dire ici
 plutôt que de le laisser découvrir.
 
-Le critère du hackathon invite à rapporter le Dice au nombre de paramètres. Ce rapport ne
-doit jamais être maximisé tel quel. Le Dice croît lentement, à peu près
-logarithmiquement, avec le nombre de paramètres, tandis que le dénominateur croît
-linéairement : le quotient est donc systématiquement maximisé par le plus petit modèle de
-la liste, quelle que soit sa qualité. Poussé à sa limite, il désigne le classifieur qui
-prédit partout la classe majoritaire.
+Le critère du hackathon met le Dice en regard du nombre de paramètres appris, sans préciser
+comment. Nous prenons pour hypothèse qu'il s'agit du Dice rapporté à l'**ordre de grandeur** du
+décompte, et non à sa valeur exacte. Cette section justifie ce choix, parce qu'il n'est pas
+neutre : il change le classement, et il change ce que le rapport doit prouver.
 
-Nous avons fait le calcul sur nos propres configurations plutôt que de le supposer. Le
-\tabref{tab:ratio} le donne. Notre configuration de référence, celle qui n'a aucun
-descripteur morphologique et le plus mauvais Dice de toutes les configurations réelles,
-obtient le meilleur ratio brut de toutes. Notre configuration finale, qui a le meilleur
-Dice, arrive huitième sur neuf. Et le classifieur dégénéré, qui mémorise un seul nombre,
-l'indice du tissu majoritaire des neuf sujets d'entraînement, obtient un Dice moyen de
-$0{,}214 \pm 0{,}008$ et un ratio brut soixante-sept fois supérieur au meilleur ratio
-atteint par une configuration réelle, et cent dix-huit fois supérieur à celui de notre
+**Le ratio brut ne tient pas.** Le Dice croît lentement, à peu près logarithmiquement, avec le
+nombre de paramètres, tandis qu'un dénominateur linéaire croît linéairement. Le quotient est
+donc systématiquement maximisé par le plus petit modèle de la liste, quelle que soit sa qualité,
+et poussé à sa limite il désigne le classifieur qui prédit partout la classe majoritaire.
+
+Nous avons fait le calcul sur nos propres configurations plutôt que de le supposer, et le
+\tabref{tab:ratio} le donne. Sur nos douze configurations réelles, **le ratio brut s'étale d'un
+facteur 5,5 alors que le Dice ne s'étale que d'un facteur 1,05** : il mesure la taille du modèle
+et presque rien d'autre. Notre configuration la plus frugale, qui a le plus mauvais Dice de toutes,
+obtient le meilleur ratio brut des configurations réelles ; notre configuration la plus
+performante arrive dernière sur treize. Et le classifieur dégénéré, qui mémorise un seul
+nombre — l'indice du tissu majoritaire des neuf sujets d'entraînement — obtient un Dice moyen de
+$0{,}214 \pm 0{,}008$ et un ratio brut cent dix-huit fois supérieur à celui de notre
 configuration finale. Une métrique qui classe ce modèle premier n'est pas une métrique de
 sélection.
 
-| configuration | paramètres | Dice moyen | Dice / paramètres |
-|:------------------------------------------------|-----------:|-----------:|------------------:|
-| classifieur dégénéré : tissu majoritaire partout | 1          | 0,2139     | $2{,}14 \cdot 10^{-1}$ |
-| A+B+C, sans morphologie (référence)              | 252        | 0,8055     | $3{,}20 \cdot 10^{-3}$ |
-| palier 0 : max-tree + min-tree, nœud propre      | 324        | 0,8156     | $2{,}52 \cdot 10^{-3}$ |
-| palier 2 : arbre des formes + remontée           | 408        | 0,8154     | $2{,}00 \cdot 10^{-3}$ |
-| configuration finale : tous les blocs            | 456        | **0,8276** | $1{,}81 \cdot 10^{-3}$ |
-| palier 1 : max-tree + min-tree + remontée        | 564        | 0,8191     | $1{,}45 \cdot 10^{-3}$ |
+**La lecture en ordres de grandeur ne fait pas la même erreur, parce qu'elle est plus
+grossière.** Elle ne compare que la tranche, c'est-à-dire la puissance de dix. Passer de 400 à
+700 paramètres ne change pas d'ordre de grandeur : les deux modèles sont à quelques centaines,
+et le critère ne les départage pas. Il n'a pas à le faire — à l'intérieur d'une tranche, c'est
+le Dice qui décide.
 
-: Classement par ratio brut décroissant, extrait de `report/assets/ratio.md`, où figure aussi le tableau complet. Le meilleur Dice est en gras et arrive avant-dernier au ratio. \label{tab:ratio}
+Le \tabref{tab:ratio} montre ce que cela donne : **nos douze configurations réelles sont toutes
+dans la même tranche, $10^2$, de 163 à 939 paramètres.** Le critère est donc muet sur notre
+propre famille, et c'est le Dice qui désigne l'auto-contexte, à $0{,}8399$. Il ne parle que
+lorsque la tranche change, et c'est le cas deux fois : contre le challenge, dont les méthodes
+publiées sont en $10^6$ et $10^7$, quatre à cinq tranches au-dessus ; et contre le classifieur
+dégénéré, quatre tranches en dessous, dont le Dice de $0{,}21$ l'élimine immédiatement — ce
+qu'aucun ratio brut ne faisait.
 
-Nous utilisons donc deux autres cadrages, qui apparaissent tous deux en \secref{sec:resultats}.
-Le premier est le front de Pareto dans le plan (nombre de paramètres, Dice), en abscisse
-logarithmique, où nos configurations et les entrées publiées du challenge sont placées côte
-à côte ; c'est le seul cadrage qui rende visible un compromis au lieu de le résumer par un
-quotient. Le second est la comparaison d'ordre de grandeur. La méthode arrivée première du
-challenge, un réseau densément connecté à quarante-sept couches, compte
+| configuration | paramètres | tranche | Dice moyen | Dice / paramètres |
+|:-----------------------------------------------|----------:|:-------:|-----------:|------------------:|
+| classifieur dégénéré : majoritaire partout      | 1   | $10^{0}$ | 0,2139 | $2{,}14 \cdot 10^{-1}$ |
+| sélection des 40 meilleures colonnes            | 163 | $10^{2}$ | 0,8036 | $4{,}93 \cdot 10^{-3}$ |
+| A+B+C, sans morphologie (référence)             | 252 | $10^{2}$ | 0,8055 | $3{,}20 \cdot 10^{-3}$ |
+| palier 0 : max-tree + min-tree                  | 324 | $10^{2}$ | 0,8156 | $2{,}52 \cdot 10^{-3}$ |
+| palier 2 : arbre des formes + remontée          | 408 | $10^{2}$ | 0,8154 | $2{,}00 \cdot 10^{-3}$ |
+| configuration finale : tous les blocs           | 456 | $10^{2}$ | 0,8276 | $1{,}81 \cdot 10^{-3}$ |
+| palier 1 : max-tree + min-tree + remontée       | 564 | $10^{2}$ | 0,8191 | $1{,}45 \cdot 10^{-3}$ |
+| finale + auto-contexte                          | 939 | $10^{2}$ | **0,8399** | $8{,}94 \cdot 10^{-4}$ |
+| MSL_SKKU, 1\textsuperscript{re} du challenge    | 1 550 000 | $10^{6}$ | 0,9283 | $5{,}99 \cdot 10^{-7}$ |
+
+: Extrait de `report/assets/ratio.md`, où figurent les treize configurations. Le classement est
+celui du ratio brut, décroissant : il place en tête le modèle à un paramètre et en queue notre
+meilleur Dice. La colonne « tranche » montre pourquoi la lecture en ordres de grandeur ne se
+laisse pas prendre : elle ne distingue pas 163 de 939, et distingue franchement $10^2$ de
+$10^6$. La ligne du challenge combine le Dice officiel du serveur et un compte de paramètres
+publié [@wang2019iseg] ; elle n'est pas évaluée sur les mêmes sujets que les nôtres.
+\label{tab:ratio}
+
+**Ce que cette lecture ne répare pas**, et que nous préférons dire : elle ne classe rien à
+l'intérieur d'une tranche, donc elle ne peut pas servir seule. Elle dit seulement où poser la
+question du Dice. C'est pourquoi nous ne présentons jamais une tranche sans le Dice qui va
+avec, et pourquoi le front de Pareto reste le cadrage principal.
+
+Deux cadrages complètent cette lecture, et tous deux apparaissent en \secref{sec:resultats}. Le
+premier est le front de Pareto dans le plan (nombre de paramètres, Dice) en abscisse
+logarithmique, où nos configurations et les entrées publiées du challenge sont placées côte à
+côte ; c'est le seul cadrage qui rende visible un compromis au lieu de le résumer par un
+quotient. Le second est la comparaison d'ordre de grandeur elle-même. La méthode arrivée
+première du challenge, un réseau densément connecté à quarante-sept couches, compte
 $1{,}55 \cdot 10^{6}$ paramètres appris ; le chiffre est donné par l'article de synthèse du
-challenge lui-même [@wang2019iseg]. Les autres participations ne publient pas toutes le
-leur, mais les architectures que le même article décrit — VGG-16 transféré, U-Net 3D à cinq
-niveaux de sous-échantillonnage, V-Net augmenté — situent l'ensemble entre $10^{6}$ et
-$10^{8}$ paramètres. Cette seconde borne est une estimation d'ordre de grandeur déduite des
-architectures et non un compte publié : elle est signalée comme telle partout où elle
-apparaît, y compris sur le front de Pareto. Nous en avons quelques centaines, soit trois à
-quatre ordres de grandeur de moins. Enfin, à l'intérieur de notre propre famille de
-configurations, aucune différence de Dice n'est affirmée sans comparaison appariée sur les
-mêmes dix sujets, avec test de Wilcoxon, taille d'effet et nombre de sujets améliorés,
-selon le protocole de la \secref{sec:protocole}.
+challenge lui-même [@wang2019iseg]. Les autres participations ne publient pas toutes le leur,
+mais les architectures que le même article décrit — VGG-16 transféré, U-Net 3D à cinq niveaux de
+sous-échantillonnage, V-Net augmenté — situent l'ensemble entre $10^{6}$ et $10^{8}$ paramètres.
+Cette seconde borne est une estimation d'ordre de grandeur déduite des architectures et non un
+compte publié : elle est signalée comme telle partout où elle apparaît, y compris sur le front
+de Pareto. Nous en avons quelques centaines, soit trois à quatre ordres de grandeur de moins.
+Enfin, à l'intérieur de notre propre famille de configurations, aucune différence de Dice n'est
+affirmée sans comparaison appariée sur les mêmes dix sujets, avec test de Wilcoxon, taille
+d'effet et nombre de sujets améliorés, selon le protocole de la \secref{sec:protocole}.
 
 # Méthode {#sec:methode}
 
@@ -468,10 +499,19 @@ valeurs : c'est le même statut qu'un filtre gaussien ou qu'un calcul d'aire.
 Un jury peut être en désaccord avec cette frontière, et il doit trouver son propre chiffre
 ici plutôt que d'avoir à le reconstituer. **Selon la convention inverse, où le scaler serait
 compté, la configuration finale passe de 456 à 758 paramètres** : $2 \times 151$ valeurs de
-plus, une moyenne et un écart-type par colonne. Les deux chiffres racontent la même histoire
-à l'échelle qui nous intéresse — 758 reste trois ordres de grandeur sous le million et demi
-de paramètres de la méthode classée première du challenge. La convention retenue change le
-décompte de deux tiers, elle ne change pas la conclusion.
+plus, une moyenne et un écart-type par colonne.
+
+Et c'est ici que la lecture en ordres de grandeur retenue en \secref{sec:probleme} montre son
+second mérite, qui n'est pas cosmétique. **Changer de convention déplace le ratio brut de
+$-40$ \%. Il ne déplace pas la tranche du tout** : 456 et 758 sont l'un et l'autre à quelques
+centaines, tranche $10^2$. Un désaccord sur la frontière entre « paramètre appris » et
+« opération » ferait donc basculer un classement fondé sur le ratio brut, et ne changerait
+rigoureusement rien à un classement fondé sur les ordres de grandeur. Dans les deux cas, quatre
+tranches séparent notre modèle du million et demi de paramètres de la méthode classée
+première.
+
+C'est la raison de fond pour laquelle nous ne demandons pas au lecteur d'adhérer à notre
+convention. À la granularité où l'argument se joue, elle n'a pas à être tranchée.
 
 # Protocole expérimental {#sec:protocole}
 
@@ -586,6 +626,13 @@ et sa forme est celle qu'on attend : le Dice croît d'abord vite, puis se tasse.
 méthode classée première du challenge, notre meilleur point atteint **90,5 % de son Dice avec
 1 651 fois moins de paramètres**. Le point le plus frugal, à 163 paramètres, en atteint encore
 86,6 % avec un facteur près de dix mille.
+
+Traduit dans le critère retenu en \secref{sec:probleme}, l'énoncé est simple et ne dépend
+d'aucun décompte fin : **nous sommes en $10^2$ paramètres là où le challenge est en $10^6$ et
+$10^7$, pour un Dice qui vaut environ 90 \% du sien.** C'est le seul sens dans lequel nous
+prétendons faire mieux — par tranche d'ordre de grandeur, pas en Dice absolu, où nous sommes
+nettement derrière. Et à l'intérieur de notre propre tranche, où le critère est muet, c'est le
+Dice qui désigne l'auto-contexte.
 
 Ces pourcentages se lisent en ordre de grandeur et pas autrement, pour la raison écrite sur la
 figure et déjà donnée en \secref{sec:probleme} : les deux nuages ne sont pas évalués sur les
@@ -739,9 +786,11 @@ qui rendrait au bloc morphologique le comportement croisé qui fait toute la val
 Sur la segmentation en trois tissus de cerveaux de nourrissons en phase isointense, une
 régression logistique lisant des descripteurs géométriques et hiérarchiques calculés à la
 volée atteint un Dice moyen de $0{,}8399$ avec 939 paramètres appris, et de $0{,}8036$ avec
-163. Rapporté à la méthode classée première du challenge iSeg-2017, cela représente environ
-90 % de son Dice pour trois ordres de grandeur de paramètres en moins — comparaison d'ordre de
-grandeur, sur des sujets différents, et nous ne la présentons pas autrement.
+163 — deux configurations de la même tranche, $10^2$. Rapporté à la méthode classée première du
+challenge iSeg-2017, qui est en $10^6$, cela représente environ **90 \% de son Dice quatre
+tranches d'ordre de grandeur plus bas** — un facteur 1 651 sur le décompte, soit 3,2 ordres au
+sens strict du rapport, et quatre tranches au sens du critère. La comparaison porte sur des sujets différents et
+se lit en ordre de grandeur ; nous ne la présentons pas autrement.
 
 Ce que ces chiffres soutiennent n'est pas que la frugalité vaut mieux, mais qu'une part
 substantielle de ce que des millions de poids apprennent peut être remplacée par des
