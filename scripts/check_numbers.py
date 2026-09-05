@@ -243,6 +243,14 @@ def assertions() -> list[tuple[str, float, float, int]]:
          MSL_SKKU_PARAMS / ac["n_params"], 1651, 0),
         ("ordre de grandeur haut : HyperDenseNet / auto-contexte",
          HYPERDENSENET_PARAMS / ac["n_params"], 11022, 0),
+        # ligne du challenge dans le tableau du ratio : les trois Dice officiels sont publiés,
+        # leur moyenne et le ratio qui en découle sont calculés ici et nulle part ailleurs.
+        ("Dice moyen de MSL_SKKU, moyenne des trois tissus publiés", ref, 0.9283, 4),
+        ("ratio brut de MSL_SKKU, mantisse en 1e-7",
+         1e7 * ref / MSL_SKKU_PARAMS, 5.99, 2),
+        # § convention de comptage : ce que la convention inverse fait au ratio brut
+        ("convention inverse : déplacement du ratio brut, en %",
+         100 * (fin["n_params"] / 758 - 1), -40, 0),
     ]
     deg = json.loads((RESULTS / "degenerate_baseline.json").read_text())
     best_ratio_real = max(

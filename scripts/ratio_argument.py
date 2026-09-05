@@ -84,6 +84,26 @@ def row(label: str, n_params: int, dice_mean: float) -> dict:
     }
 
 
+# Comptes de paramètres publiés du challenge, seules valeurs relevées sur une source primaire.
+# Aucune méthode dont le décompte devrait être estimé n'entre ici ni dans le rapport.
+PUBLISHED_TRANCHES = {
+    6: "MSL_SKKU, 1,55 million (Wang et al. 2019)",
+    7: "HyperDenseNet, 10 349 450 (Dolz et al. 2019, table 4)",
+}
+
+MOTS = {1: "une", 2: "deux", 3: "trois", 4: "quatre", 5: "cinq", 6: "six", 7: "sept"}
+
+
+def ecart(t_ref: int, t_autre: int) -> str:
+    """« deux tranches », « quatre à cinq tranches » : l'écart entre deux puissances de dix.
+
+    Calculé, jamais écrit à la main : c'est exactement le genre de chiffre qu'une relecture
+    laisse passer.
+    """
+    n = abs(t_autre - t_ref)
+    return f"{MOTS[n]} tranche" + ("s" if n > 1 else "")
+
+
 def spread(values: list[float]) -> float:
     """Facteur entre la plus grande et la plus petite valeur finie d'une colonne."""
     finite = [v for v in values if np.isfinite(v) and v > 0]
@@ -110,6 +130,7 @@ def main() -> None:
     reels = [r for r in rows if r["n_params"] > 1]
     tranches = sorted({r["tranche"] for r in reels})
     meilleur_reel = max(reels, key=lambda r: r["dice"])
+    t_nous, t_deg = tranches[0], int(np.floor(np.log10(deg["n_params"])))
     lines = [
         "<!-- généré par scripts/ratio_argument.py, ne pas éditer à la main -->",
         "",
@@ -143,14 +164,16 @@ def main() -> None:
            f"{max(r['n_params'] for r in reels)} paramètres."
            if len(tranches) == 1 else
            f"nos configurations occupent les tranches {', '.join('$10^{%d}$' % t for t in tranches)}.")
-        + " Le critère ne les départage donc pas, et il n'a pas à le faire : à l'intérieur d'une "
+        + " Cette lecture ne les départage donc pas, et n'a pas à le faire : à l'intérieur d'une "
         "tranche, c'est le Dice qui décide. Le meilleur est "
         f"« {meilleur_reel['label']} » à {meilleur_reel['dice']:.4f}.",
         "",
-        "Le critère ne dit quelque chose que lorsque la tranche change. C'est le cas contre le "
-        "challenge, dont les méthodes publiées sont en $10^6$ et $10^7$, soit quatre à cinq "
-        "tranches au-dessus. Et c'est le cas contre le classifieur dégénéré, quatre tranches "
-        "en dessous : son Dice de "
+        "Cette lecture ne dit quelque chose que lorsque la tranche change. C'est le cas contre "
+        "le challenge, dont les deux méthodes au décompte publié sont en "
+        + " et ".join(f"$10^{{{t}}}$" for t in sorted(PUBLISHED_TRANCHES))
+        + f", soit {MOTS[min(PUBLISHED_TRANCHES) - t_nous]} à "
+        f"{ecart(t_nous, max(PUBLISHED_TRANCHES))} au-dessus. Et c'est le cas contre le "
+        f"classifieur dégénéré, {ecart(t_nous, t_deg)} en dessous : son Dice de "
         f"{deg['dice_mean']:.2f} l'élimine immédiatement, ce qu'aucun ratio brut ne faisait.",
         "",
         "C'est la propriété qu'on demande à cette lecture : elle est trop grossière pour être "
