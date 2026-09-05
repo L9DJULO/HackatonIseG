@@ -3,7 +3,7 @@ title: "Segmentation frugale des IRM cérébrales de nourrissons en phase isoint
 subtitle: "Hackathon SCIA 2026 — sujet 2, challenge MICCAI iSeg-2017"
 author:
   - Jules Lange
-  - "Arthur [[NOM:arthur]]"
+  - "Arthur Goullet de Rugy"
 date: "septembre 2026"
 abstract: |
   [[RÉSUMÉ : à rédiger en dernier, une fois les chiffres finaux disponibles.]]
@@ -110,8 +110,9 @@ descripteur morphologique et le plus mauvais Dice de toutes les configurations r
 obtient le meilleur ratio brut de toutes. Notre configuration finale, qui a le meilleur
 Dice, arrive huitième sur neuf. Et le classifieur dégénéré, qui mémorise un seul nombre,
 l'indice du tissu majoritaire des neuf sujets d'entraînement, obtient un Dice moyen de
-$0{,}214 \pm 0{,}008$ et un ratio brut soixante-sept fois supérieur à celui de la meilleure
-configuration réelle. Une métrique qui classe ce modèle premier n'est pas une métrique de
+$0{,}214 \pm 0{,}008$ et un ratio brut soixante-sept fois supérieur au meilleur ratio
+atteint par une configuration réelle, et cent dix-huit fois supérieur à celui de notre
+configuration finale. Une métrique qui classe ce modèle premier n'est pas une métrique de
 sélection.
 
 | configuration | paramètres | Dice moyen | Dice / paramètres |
@@ -129,9 +130,16 @@ Nous utilisons donc deux autres cadrages, qui apparaissent tous deux en \secref{
 Le premier est le front de Pareto dans le plan (nombre de paramètres, Dice), en abscisse
 logarithmique, où nos configurations et les entrées publiées du challenge sont placées côte
 à côte ; c'est le seul cadrage qui rende visible un compromis au lieu de le résumer par un
-quotient. Le second est la comparaison d'ordre de grandeur : les méthodes du challenge
-emploient de [[CHIFFRE:params_publies_min]] à [[CHIFFRE:params_publies_max]] paramètres là
-où nous en avons quelques centaines. Enfin, à l'intérieur de notre propre famille de
+quotient. Le second est la comparaison d'ordre de grandeur. La méthode arrivée première du
+challenge, un réseau densément connecté à quarante-sept couches, compte
+$1{,}55 \cdot 10^{6}$ paramètres appris ; le chiffre est donné par l'article de synthèse du
+challenge lui-même [@wang2019iseg]. Les autres participations ne publient pas toutes le
+leur, mais les architectures que le même article décrit — VGG-16 transféré, U-Net 3D à cinq
+niveaux de sous-échantillonnage, V-Net augmenté — situent l'ensemble entre $10^{6}$ et
+$10^{8}$ paramètres. Cette seconde borne est une estimation d'ordre de grandeur déduite des
+architectures et non un compte publié : elle est signalée comme telle partout où elle
+apparaît, y compris sur le front de Pareto. Nous en avons quelques centaines, soit trois à
+quatre ordres de grandeur de moins. Enfin, à l'intérieur de notre propre famille de
 configurations, aucune différence de Dice n'est affirmée sans comparaison appariée sur les
 mêmes dix sujets, avec test de Wilcoxon, taille d'effet et nombre de sujets améliorés,
 selon le protocole de la \secref{sec:protocole}.
@@ -315,43 +323,396 @@ configuration sans morphologie, également sur 10 sujets sur 10. Le détail est 
 
 ## Classifieur et post-traitement {#sec:classifieur}
 
-Paragraphe à rédiger. Modèles, auto-contexte [@tu2010autocontext] et sa validation croisée
-interne, contraintes topologiques, sélection de features.
+Le classifieur est une régression logistique multinomiale. À $F$ colonnes elle coûte
+exactement $3(F+1)$ poids, soit 456 pour les 151 colonnes de la configuration finale. Deux
+raisons à ce choix, et la seconde compte autant que la première. C'est le plus petit modèle
+qui sache encore combiner linéairement des descripteurs d'échelles et d'unités différentes ;
+c'est surtout un modèle dont le décompte ne se discute pas, là où un modèle à base d'arbres
+obligerait à convenir d'abord de ce que coûte un nœud. La régularisation vaut $C = 1$ et le
+nombre d'itérations 300, tous deux fixés a priori et jamais choisis sur les labels.
+L'optimiseur en réclame 319 pour converger complètement : l'écart a été mesuré sur un pli, le
+Dice est identique à la quatrième décimale et la norme des poids passe de 10,33 à 10,19.
 
-## Convention de comptage des paramètres
+**L'auto-contexte, et le piège qu'il tend.** Le classifieur décide voxel par voxel. Le bloc F
+lui donne déjà un voisinage, mais sur les intensités ; l'auto-contexte [@tu2010autocontext]
+lui en donne un sur les décisions. Un premier étage produit une carte de probabilités, on en
+lit la moyenne dans des voisinages gaussiens de 1, 2 et 4 mm, et un second étage reçoit les
+colonnes d'origine plus ces neuf colonnes-là. Un voxel isolément ambigu redevient décidable
+si tout ce qui l'entoure penche déjà d'un côté : c'est exactement ce qui manque en phase
+isointense.
 
-Paragraphe à rédiger, avec l'encadré de la convention et le chiffre selon la convention
-inverse.
+Le piège est dans l'entraînement du second étage. Si les cartes de probabilités qu'il voit
+ont été produites par le premier étage sur ses propres données d'entraînement, elles sont
+anormalement bonnes — le premier étage a déjà vu ces voxels. Le second apprend alors à faire
+au premier une confiance que la qualité réelle ne justifie pas, et l'ensemble se dégrade à
+l'inférence. La parade est une validation croisée interne aux neuf sujets d'entraînement du
+pli courant : les colonnes de contexte d'un sujet sont toujours produites par un modèle qui
+ne l'a jamais vu. Le sujet laissé dehors par la boucle externe n'entre nulle part, et la
+partition interne ne concerne que les neuf autres.
+
+Ce que cela coûte est explicite : les deux étages sont transportés à l'inférence, soit
+$3(F+1) + 3(F+10)$ paramètres, 939 pour $F = 151$. Les modèles des plis internes, eux, sont
+jetés une fois les colonnes de contexte fabriquées ; ils ne sont pas transportés et ne
+comptent pas. C'est le seul point de la convention où un lecteur pourrait vouloir trancher
+autrement, et il est écrit ici pour qu'il puisse le faire.
+
+**Le post-traitement, à zéro paramètre.** Trois défauts découlent mécaniquement d'une
+décision prise voxel par voxel : du bruit poivre-et-sel dans les régions homogènes, des
+composantes minuscules isolées, et des contacts directs entre substance blanche et liquide
+céphalo-rachidien. Le dernier est le plus intéressant, parce qu'il est anatomiquement
+impossible : le ruban cortical s'interpose partout entre les deux. Trois étapes les
+corrigent — lissage gaussien des probabilités à $\sigma = 1$ mm en convolution normalisée,
+suppression des composantes connexes de moins de 30 mm³ avec réattribution à la meilleure
+classe suivante, et interdiction de toute 6-adjacence entre substance blanche et LCR, le
+voxel le moins sûr des deux passant en matière grise. Aucun de ces seuils n'est calibré sur
+les labels : ils viennent de l'échelle du voxel et de l'anatomie. Le post-traitement ajoute
+donc zéro paramètre appris, et c'est ce qui le rend intéressant dans un projet dont le
+critère est le nombre de paramètres. Un seuil qui aurait été ajusté sur les labels
+d'entraînement, lui, devrait être compté.
+
+**La sélection de colonnes n'est pas gratuite.** On peut ne garder que les $K$ colonnes de
+plus grand poids et réajuster. Le décompte passe alors de $3(F+1)$ à $3(K+1) + K$, car les
+indices retenus sont ajustés sur les sujets d'entraînement et doivent être transportés : sans
+eux, on ne sait pas quelles colonnes présenter au modèle. Ils tombent donc sous la règle de
+la \secref{sec:comptage} et sont comptés, un entier par colonne. À $K = 40$, cela fait 163
+paramètres contre 456. Le rapport devra présenter le gain net, pas la seule réduction du
+nombre de poids.
+
+**Ce que les trois donnent, mesuré.** Les résultats complets sont en
+\secref{sec:resultats} ; voici ce qu'ils disent de ces trois mécanismes, y compris quand ils
+disent non.
+
+L'auto-contexte gagne, et nettement : $0{,}8399$ contre $0{,}8276$, soit $+0{,}0122$ de Dice
+sur les dix sujets, dix sujets améliorés sur dix, $p = 0{,}002$ brut et $0{,}027$ après Holm.
+C'est le même ordre de gain que l'ajout de tous les blocs de descripteurs à la configuration
+de référence, pour un peu plus du double de paramètres — 939 contre 456. Il améliore aussi
+les deux métriques de distance, ASD et MHD, ce qui n'allait pas de soi.
+
+La sélection à 40 colonnes coûte ce qu'elle prétend économiser, et le front de Pareto de la
+\figref{fig:pareto} est là pour arbitrer : $0{,}8036$ pour 163 paramètres, soit $-0{,}0240$
+de Dice contre la configuration finale, zéro sujet amélioré sur dix. C'est une dégradation
+franche et systématique, mais elle achète un facteur 2,8 sur le décompte. Ce n'est donc pas
+un échec : c'est le point le plus frugal de notre front, et le seul argument valable pour ou
+contre est celui du compromis, pas celui du Dice seul.
+
+**Le post-traitement, lui, ne marche pas, et l'erreur est instructive.** Le lissage et le
+nettoyage des composantes coûtent $-0{,}0031$ de Dice, trois sujets améliorés sur dix, non
+distinguable du bruit ; la contrainte topologique ajoutée par-dessus coûte encore
+$-0{,}0011$, zéro sujet amélioré sur dix, et cette dégradation-là est parfaitement
+systématique. La raison de la seconde est une erreur d'anatomie de notre part, pas un défaut
+d'implémentation. Nous avons posé que le ruban cortical s'interpose partout entre substance
+blanche et LCR. C'est vrai en surface. C'est faux aux ventricules, où la substance blanche
+périventriculaire borde directement le LCR ventriculaire, sans matière grise entre les deux.
+La contrainte force donc de la matière grise le long de toute la paroi ventriculaire, où il
+n'y en a pas. Restreinte au LCR sous-arachnoïdien, elle resterait défendable ; appliquée
+partout, elle est fausse, et la mesure la punit exactement là où on l'attendrait.
+
+Quant au lissage, l'explication tient sans doute à ce que les blocs B et F fournissent déjà
+un voisinage multi-échelle : la carte de probabilités est régularisée en amont, et lisser une
+seconde fois érode les structures fines, sulci et frontières corticales. Il faut noter que
+sur l'ASD, seule métrique où il gagne, le lissage donne la meilleure valeur de toutes les
+configurations — il rapproche les surfaces tout en dégradant le recouvrement, ce qui est
+cohérent avec cette lecture.
+
+Les trois mécanismes sont couverts par la suite de tests, y compris un test d'intégration qui
+fait tourner la boucle leave-one-out complète sur des sujets de synthèse, et un test de
+régression sur un blocage de la contrainte topologique que seules les vraies données avaient
+révélé.
+
+## Convention de comptage des paramètres {#sec:comptage}
+
+\begin{encadre}{Ce qui compte comme paramètre appris}
+\textbf{La règle.} Est un paramètre appris toute quantité ajustée sur les sujets
+d'entraînement et réutilisée telle quelle à l'inférence — autrement dit, toute quantité qu'il
+faudrait sérialiser pour segmenter un nouveau sujet.
+
+\smallskip
+\textbf{Comptent :} les poids et les biais du classifieur, sans exception, et pour chaque
+étage s'il y en a plusieurs ; les indices des colonnes retenues par une sélection ; toute
+statistique de normalisation estimée sur le train et figée ; tout seuil de post-traitement
+qui serait calibré sur les labels.
+
+\smallskip
+\textbf{Ne comptent pas :} les statistiques recalculées sur le sujet courant à l'inférence,
+z-score et médiane intra-masque, rangs percentiles, moyenne et écart-type par colonne ; les
+hyperparamètres fixés a priori, sigmas des gaussiennes, seuils d'aire de l'arbre des formes,
+niveaux de quantification, rayons de voisinage, seuils du post-traitement ; la structure des
+descripteurs elle-même, dont la suite de tests vérifie mécaniquement qu'aucun n'a de
+paramètre appris.
+\end{encadre}
+
+Le point qui décide de tout est la standardisation. Elle est intra-sujet : la moyenne et
+l'écart-type de chaque colonne sont recalculés sur le masque cérébral du sujet qu'on est en
+train de segmenter, à l'entraînement comme à l'inférence. Elle ne mémorise donc rien du jeu
+d'entraînement, et segmenter un nouveau sujet ne demande de transporter aucune de ces
+valeurs : c'est le même statut qu'un filtre gaussien ou qu'un calcul d'aire.
+
+Un jury peut être en désaccord avec cette frontière, et il doit trouver son propre chiffre
+ici plutôt que d'avoir à le reconstituer. **Selon la convention inverse, où le scaler serait
+compté, la configuration finale passe de 456 à 758 paramètres** : $2 \times 151$ valeurs de
+plus, une moyenne et un écart-type par colonne. Les deux chiffres racontent la même histoire
+à l'échelle qui nous intéresse — 758 reste trois ordres de grandeur sous le million et demi
+de paramètres de la méthode classée première du challenge. La convention retenue change le
+décompte de deux tiers, elle ne change pas la conclusion.
 
 # Protocole expérimental {#sec:protocole}
 
-Section à rédiger. Leave-one-out à dix plis, contrôle anti-fuite, métriques Dice / ASD /
-MHD, protocole statistique.
+**Leave-one-out.** Dix plis sur les dix sujets annotés : à chaque pli, neuf sujets entraînent
+et le dixième est segmenté entièrement. Les graines sont fixées, la graine d'échantillonnage
+dérive du numéro du sujet de test, et une seule commande reproduit n'importe quel résultat du
+rapport, `python -m src.cli run experiments/<config>.yaml`, qui écrit un JSON dans `results/`.
+Tous les chiffres du rapport sont régénérés depuis ces JSON par `make report-assets` ; aucun
+n'est recopié à la main.
+
+**Le contrôle anti-fuite.** C'est la propriété la plus critique du protocole, et elle est
+vérifiée mécaniquement plutôt que par relecture. Chaque bloc de descripteurs est calculé trois
+fois sur le même sujet : avec la vraie carte de labels, avec une carte permutée où les tissus
+ont changé d'étiquette, et sans aucune carte, comme sur les treize sujets de test. Le test
+exige que les trois sorties soient identiques bit à bit. Un bloc qui lirait la vérité terrain,
+même indirectement, échouerait immédiatement. Un second test vérifie qu'aucun bloc ne garde
+d'état d'un sujet à l'autre.
+
+**Métriques.** Les trois du challenge, et toutes les trois rapportées : Dice, distance de
+surface moyenne (ASD) et distance de Hausdorff modifiée (MHD, 95\textsuperscript{e}
+percentile des distances de surface symétriques). Elles sont calculées par classe et par
+sujet, jamais agrégées sur les voxels de plusieurs sujets, et le fond n'est jamais évalué. Le
+\secref{sec:resultats} donne le Dice dans le corps du texte et les distances dans un tableau
+séparé : le Dice mesure un recouvrement de volume, les distances mesurent une erreur de
+frontière, et une méthode peut gagner sur l'un sans gagner sur l'autre — ce qui arrive
+effectivement dans nos résultats.
+
+**Protocole statistique.** Dix sujets, c'est peu, et un écart de quelques millièmes de Dice
+peut n'être que du bruit. Le même sujet passant dans toutes les configurations, toutes les
+comparaisons sont appariées. Chacune rapporte le delta moyen et son écart-type inter-sujets,
+le test des rangs signés de Wilcoxon bilatéral, la taille d'effet — $d$ de Cohen apparié et
+$\delta$ de Cliff, non paramétrique — et le nombre de sujets améliorés sur dix. Ce dernier
+mérite sa justification : à $n = 10$ l'amplitude d'un gain est bruitée, mais sa systématicité
+ne l'est pas, et un gain porté par un seul sujet n'est pas un gain. Un effet est déclaré
+distinguable du bruit si la p-valeur ajustée est inférieure à 0,05 **et** si au moins huit
+sujets sur dix vont dans le même sens ; le critère est symétrique, une dégradation
+systématique reste un résultat.
+
+Les quatorze comparaisons sont déclarées à l'avance — chacune au moment où la configuration
+qu'elle concerne a été figée dans `experiments/`, avant son exécution — et corrigées de la
+multiplicité par la méthode de Holm appliquée à la famille entière. Corriger sur un
+sous-ensemble donnerait une correction plus permissive que la vérité ; c'est l'erreur à ne pas
+commettre quand on ajoute une configuration en cours de route. Le verdict est rendu sur la
+p-valeur ajustée, jamais sur la brute. Avec $n = 10$ la plus petite p-valeur atteignable vaut
+0,002 : sur une famille de quatorze elle devient 0,027, et tous les gains que nous
+revendiquons la franchissent. La correction ne nous coûte donc aucun résultat — raison de plus
+pour l'appliquer plutôt que d'argumenter qu'elle serait facultative.
 
 # Résultats {#sec:resultats}
 
-Section à rédiger. Tableau d'ablation, front de Pareto, budget de frugalité, figures
-qualitatives.
+Toutes les valeurs de cette section viennent de `report/assets/`, régénéré depuis les JSON de
+`results/` par `make report-assets`. Aucune n'est écrite à la main.
 
-# Discussion
+## Ablation
 
-Section à rédiger.
+Le \tabref{tab:ablation} donne les douze configurations. Trois lectures s'en dégagent, et la
+troisième est celle qui compte.
+
+D'abord, **le contexte non local paye et la description locale plafonne**. Passer de A+B+C au
+bloc morphologique gagne $+0{,}0102$ de Dice sur dix sujets sur dix ; la remontée de branche
+en ajoute $+0{,}0035$, également sur dix sujets sur dix. Les deux survivent à la correction de
+Holm. À l'inverse, les raffinements purement locaux — filtres de grain, quantification par
+rang — ne produisent aucun effet distinguable. C'est exactement ce que la phase isointense
+laissait attendre : ce qui manque au voxel n'est pas dans son voisinage immédiat.
+
+Ensuite, **l'auto-contexte prolonge le même mouvement**, et c'est cohérent : il ajoute du
+contexte non local, non plus sur les intensités mais sur les décisions. Il porte le Dice à
+$0{,}8399$, gagne sur les dix sujets, et améliore les trois métriques à la fois — seul point
+du tableau à obtenir simultanément le meilleur Dice, le meilleur ASD et le meilleur MHD.
+
+Enfin, **deux mécanismes échouent, et nous les gardons dans le tableau**. Le post-traitement
+dégrade ; l'arbre des formes n'apporte rien contre la paire max-tree / min-tree. Les
+\secref{sec:discussion} y revient.
+
+| configuration | param. | LCR | SG | SB | Dice moyen |
+|:------------------------------------------|-------:|------:|------:|------:|-----------:|
+| A+B+C, sans morphologie (référence)        | 252 | 0,851 | 0,805 | 0,761 | 0,8055 |
+| palier 0 : max-tree + min-tree             | 324 | 0,866 | 0,813 | 0,767 | 0,8156 |
+| palier 1 : + remontée de branche           | 564 | 0,868 | 0,818 | 0,772 | 0,8191 |
+| palier 2 : arbre des formes + remontée     | 408 | 0,866 | 0,814 | 0,766 | 0,8154 |
+| palier 3 : + filtres de grain              | 426 | 0,866 | 0,814 | 0,766 | 0,8154 |
+| palier 2, quantification 64 niveaux        | 408 | 0,866 | 0,814 | 0,765 | 0,8149 |
+| palier 2, quantification par rang          | 408 | 0,862 | 0,813 | 0,766 | 0,8136 |
+| sélection des 40 meilleures colonnes       | 163 | 0,861 | 0,804 | 0,746 | 0,8036 |
+| configuration finale : tous les blocs      | 456 | 0,881 | 0,825 | 0,777 | 0,8276 |
+| finale + lissage et nettoyage              | 456 | 0,876 | 0,825 | 0,773 | 0,8246 |
+| finale + contrainte topologique            | 456 | 0,877 | 0,823 | 0,770 | 0,8235 |
+| **finale + auto-contexte**                 | **939** | **0,891** | **0,834** | **0,795** | **0,8399** |
+
+: Ablation en leave-one-out sur les dix sujets annotés. Dice moyen par tissu ; les
+écarts-types inter-sujets, qui valent de 0,009 à 0,018 selon le tissu, sont omis ici pour la
+lisibilité et figurent dans `report/assets/ablation.md` avec l'ASD et la MHD. Les quatorze
+comparaisons appariées sont dans `report/assets/stats.md`. \label{tab:ablation}
+
+## Le front de Pareto
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{report/assets/fig04_pareto.pdf}
+\caption{Front de Pareto dans le plan (paramètres appris, Dice moyen), abscisse
+logarithmique. Les deux références publiées sont les seules méthodes du challenge pour
+lesquelles on dispose à la fois d'un Dice officiel et d'un compte de paramètres publié ;
+aucune méthode dont il faudrait estimer le décompte n'est placée dans le nuage. La mise en
+garde portée sur la figure n'est pas décorative : nos valeurs sont un leave-one-out sur les
+dix sujets annotés, les leurs viennent du serveur des organisateurs sur les treize sujets de
+test.}
+\label{fig:pareto}
+\end{figure}
+
+La \figref{fig:pareto} porte l'argument central. Notre front s'étend de 163 à 939 paramètres,
+et sa forme est celle qu'on attend : le Dice croît d'abord vite, puis se tasse. Rapporté à la
+méthode classée première du challenge, notre meilleur point atteint **90,5 % de son Dice avec
+1 651 fois moins de paramètres**. Le point le plus frugal, à 163 paramètres, en atteint encore
+86,6 % avec un facteur près de dix mille.
+
+Ces pourcentages se lisent en ordre de grandeur et pas autrement, pour la raison écrite sur la
+figure et déjà donnée en \secref{sec:probleme} : les deux nuages ne sont pas évalués sur les
+mêmes sujets. Nous n'avons pas soumis au serveur du challenge, donc nous ne pouvons pas
+prétendre à une comparaison exacte, et nous ne le prétendons pas.
+
+## Ce que valent les intervalles, et ce que valent les tests
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{report/assets/fig05_ablation.pdf}
+\caption{Ablation en barres. (a)~Dice absolu de chaque configuration, intervalle de confiance
+à 95 \% de la moyenne sur les dix sujets : tous les intervalles se chevauchent. (b)~Delta
+apparié contre l'étape précédente : la variabilité inter-sujets s'annule dans la différence et
+des effets nets apparaissent. En accent, les étapes que le protocole de la
+\secref{sec:protocole} déclare distinguables du bruit.}
+\label{fig:ablation}
+\end{figure}
+
+La \figref{fig:ablation} vaut moins pour ses barres que pour le contraste entre ses deux
+panneaux. Lues en valeurs absolues, les configurations sont indiscernables : sur dix sujets,
+l'écart-type inter-sujets vaut environ $0{,}011$ de Dice, soit trois fois le plus gros effet
+que nous mesurons. Un lecteur qui s'arrêterait au panneau (a) conclurait, à tort, qu'aucune
+étape ne fait rien. Le panneau (b) montre pourquoi c'est faux : le même sujet passant dans
+toutes les configurations, la variabilité inter-sujets disparaît de la différence, et
+l'intervalle de $+0{,}0122$ pour l'auto-contexte exclut zéro très largement.
+
+C'est le seul argument statistique de ce rapport, et il justifie à lui seul que toutes nos
+comparaisons soient appariées. Un cas mérite d'être signalé plutôt que caché : pour le palier
+2 contre le palier 1, l'intervalle de confiance de Student exclut zéro alors que le test de
+Wilcoxon déclaré ne conclut pas ($p = 0{,}064$ brut, $0{,}258$ après Holm). Les deux outils
+divergent sur dix sujets. C'est le test déclaré qui tranche, et la figure le signale.
+
+## Budget de frugalité
+
+Le modèle entier tient dans **2,5 kilo-octets sur disque** pour la configuration finale, et le
+temps d'inférence est de l'ordre de la seconde par volume. L'extraction des descripteurs
+domine largement le coût, et à l'intérieur de l'extraction c'est le bloc gaussien puis le bloc
+morphologique qui dominent. La frugalité de cette approche est donc paramétrique et mémorielle
+bien plus que calculatoire : nous ne prétendons pas être rapides, nous prétendons ne rien
+mémoriser.
+
+Les mesures détaillées sont dans `report/assets/frugality.md`. **Attention à ne pas les lire
+en travers** : elles ont été produites sur deux machines différentes, ce que l'asset signale
+ligne par ligne. Seules les mesures issues de la même machine se comparent en secondes.
+
+**Le résultat sur la quantification à 64 niveaux est négatif, et nous le corrigeons ici.** Nous
+avions présenté la réduction à 64 niveaux comme un levier de frugalité. La mesure, faite sur
+une seule et même machine pour les deux variantes, ne montre aucune économie : 79,9 s contre
+80,2 s d'extraction par sujet, même empreinte mémoire du bloc morphologique à 192 Mo, même
+taille de modèle à 3,9 ko. Et elle coûte $-0{,}0005$ de Dice, dégradation faible mais
+systématique — neuf sujets sur dix, $p = 0{,}049$ après Holm. Une option qui coûte un peu et ne
+rapporte rien de mesurable n'est pas un levier de frugalité : c'est une option à ne pas
+prendre, et nous ne la prenons pas.
+
+# Discussion {#sec:discussion}
+
+**Ce qui marche, et pourquoi.** Le fil conducteur de tous nos gains est le même : l'information
+qui manque au voxel isolé est non locale. Le bloc morphologique, la remontée de branche vers
+les ancêtres, et l'auto-contexte gagnent tous les trois, chacun sur dix sujets sur dix ; les
+raffinements locaux ne gagnent rien. C'est la prédiction directe de la \figref{fig:isointense}
+de l'introduction : à six mois, l'intensité d'un point ne sépare pas les tissus, et un
+voisinage de quelques millimètres non plus.
+
+**Le résultat négatif sur l'auto-dualité.** Nous attendions de l'arbre des formes qu'il fasse
+mieux que la paire max-tree / min-tree, puisqu'il produit la même information dans une
+structure unique. Il divise effectivement par deux le nombre de colonnes à attributs
+identiques — 135 contre 187 — exactement comme la théorie le prédit. Mais le Dice ne bouge pas
+de façon distinguable : $-0{,}0002$ contre le palier 0, quatre sujets améliorés sur dix,
+$p = 0{,}625$. Contre le palier 1, l'écart de $-0{,}0037$ ne franchit pas non plus notre seuil.
+
+Nous n'avons pas d'explication certaine et nous préférons le dire. L'hypothèse que nous
+trouvons la plus probable est que le classifieur linéaire ne tire aucun bénéfice de la
+compacité : deux colonnes redondantes lui coûtent deux poids, pas de la performance, et la
+régularisation absorbe la redondance. Le gain de l'auto-dualité serait alors réel mais
+paramétrique — moins de colonnes pour le même Dice, donc un meilleur point sur le front — et
+non qualitatif. Le \tabref{tab:ablation} est compatible avec cette lecture : le palier 2 fait
+aussi bien que le palier 1 avec 408 paramètres au lieu de 564.
+
+**Le résultat négatif sur le post-traitement, et l'erreur d'anatomie.** La contrainte
+topologique dégrade systématiquement, et nous savons pourquoi : nous avions posé que le ruban
+cortical s'interpose partout entre substance blanche et LCR, ce qui est vrai en surface et
+faux aux ventricules. C'est une erreur de notre part, pas un défaut de la méthode, et elle
+suggère sa propre correction : restreindre la contrainte au LCR sous-arachnoïdien, en
+excluant les composantes ventriculaires. Nous ne l'avons pas fait faute de temps, et nous ne
+revendiquons donc rien sur ce point.
+
+Le cas du lissage est moins net. Il dégrade le Dice de $0{,}0031$, non distinguable du bruit,
+mais il donne la meilleure ASD de toutes les configurations. Autrement dit il rapproche les
+surfaces tout en dégradant le recouvrement volumique — ce qui est cohérent avec l'idée qu'il
+érode les structures fines, sulci et frontières corticales, déjà régularisées en amont par les
+blocs gaussien et contexte.
+
+**Le compromis de la sélection de colonnes.** Passer à 40 colonnes coûte $-0{,}0240$ de Dice et
+divise le décompte par 2,8. Nous ne tranchons pas : c'est précisément ce qu'un front de Pareto
+sert à ne pas trancher à la place du lecteur. Nous signalons seulement que le décompte correct
+inclut les 40 indices retenus, sans quoi la sélection paraîtrait deux fois plus rentable
+qu'elle ne l'est.
+
+**Limites.** Elles sont sévères et nous les énonçons sans atténuation. Dix sujets annotés
+seulement : tout écart inférieur à $0{,}005$ de Dice est hors de portée de notre protocole.
+Aucun jeu de test externe, aucune soumission au serveur du challenge, donc **aucun de nos
+chiffres n'est directement comparable aux scores publiés** — les pourcentages de la
+\secref{sec:resultats} se lisent en ordre de grandeur. Les hyperparamètres des blocs sont
+fixés a priori et non validés dans le pli ; ils ne sont pas ajustés sur les données, mais un
+jury peut objecter qu'ils incorporent une connaissance du domaine acquise ailleurs. Enfin, la
+quantification linéaire du bloc morphologique nous fait perdre l'invariance au contraste :
+seule l'invariance affine subsiste, et nous l'avons dit en \secref{sec:tos} plutôt que de
+revendiquer une propriété que nous n'avons plus.
+
+**Pistes.** Trois nous paraissent valoir le coup, dans cet ordre. Restreindre la contrainte
+topologique à la surface corticale, puisque l'échec est compris. Empiler un troisième étage
+d'auto-contexte, puisque le deuxième gagne autant que tous les blocs de descripteurs réunis.
+Et calculer l'arbre des formes conjointement sur T1 et T2 plutôt que modalité par modalité, ce
+qui rendrait au bloc morphologique le comportement croisé qui fait toute la valeur du bloc A.
 
 # Conclusion
 
-Section à rédiger.
+Sur la segmentation en trois tissus de cerveaux de nourrissons en phase isointense, une
+régression logistique lisant des descripteurs géométriques et hiérarchiques calculés à la
+volée atteint un Dice moyen de $0{,}8399$ avec 939 paramètres appris, et de $0{,}8036$ avec
+163. Rapporté à la méthode classée première du challenge iSeg-2017, cela représente environ
+90 % de son Dice pour trois ordres de grandeur de paramètres en moins — comparaison d'ordre de
+grandeur, sur des sujets différents, et nous ne la présentons pas autrement.
+
+Ce que ces chiffres soutiennent n'est pas que la frugalité vaut mieux, mais qu'une part
+substantielle de ce que des millions de poids apprennent peut être remplacée par des
+descripteurs non appris, à condition qu'ils soient non locaux. Nos gains viennent tous de là,
+et nos échecs — l'auto-dualité sans gain de Dice, la contrainte topologique fondée sur une
+anatomie fausse, la quantification qui ne fait économiser rien — viennent tous d'ailleurs.
 
 <!--
 ================================================================================
 MARQUEURS RESTANTS — à remplacer depuis report/assets/facts.md ou un JSON de
 results/ avant le rendu final. Ne jamais y écrire une valeur provisoire.
 
-  [[NOM:arthur]]               nom de famille d'Arthur, page de titre
   [[RÉSUMÉ]]                   résumé, à écrire en dernier
   [[CHIFFRE:dice_final]]       § 1, Dice moyen de la configuration finale figée
   [[CHIFFRE:parametres_final]] § 1, paramètres de la configuration finale figée
-  [[CHIFFRE:params_publies_min]] § 2, borne basse des paramètres des méthodes publiées
-  [[CHIFFRE:params_publies_max]] § 2, borne haute des paramètres des méthodes publiées
+
+RÉSOLUS le 2026-09-04 :
+  params_publies_min -> 1,55e6, compte exact publié dans wang2019iseg (méthode classée 1re)
+  params_publies_max -> 1e8, ESTIMATION d'ordre de grandeur déduite des architectures
+                        décrites dans wang2019iseg. Doit rester étiquetée « estimation »
+                        dans le texte et sur la figure 4.
 
 À REGÉNÉRER quand la configuration finale sera figée :
   tableau 1 (§ 2)  <- make report-assets puis python scripts/ratio_argument.py

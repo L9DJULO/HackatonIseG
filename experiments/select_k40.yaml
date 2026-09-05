@@ -1,0 +1,22 @@
+# Sélection des 40 colonnes de plus grand poids, puis réajustement (src/models/select.py).
+# Paramètres attendus : 3*(40+1) + 40 indices = 163, contre 456 pour la configuration finale.
+# Les indices retenus SONT comptés : ils sont ajustés sur le train et transportés à l'inférence.
+# NON ENCORE EXÉCUTÉE : aucun JSON correspondant dans results/.
+run_name: select_k40
+seed: 0
+features:
+  - name: intensity
+  - name: gaussian
+  - name: spatial
+  - name: morpho
+  - name: symmetry
+  - name: context
+model:
+  name: select
+  config:
+    k: 40
+    base: {name: logreg, C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 5000
+  boundary_frac: 0.0
+  prior_correction: true

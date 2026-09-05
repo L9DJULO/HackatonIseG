@@ -1,0 +1,42 @@
+{
+ "machine": "vm / x86_64 / python 3.11.15",
+ "run_name": "logreg_ABCD_p2",
+ "subject_id": 1,
+ "blocks": {
+  "intensity": {
+   "seconds": 0.87,
+   "n_features": 6,
+   "megabytes_float32": 22.1,
+   "peak_rss_gb": 0.26
+  },
+  "gaussian": {
+   "seconds": 35.14,
+   "n_features": 68,
+   "megabytes_float32": 250.6,
+   "peak_rss_gb": 1.55
+  },
+  "spatial": {
+   "seconds": 2.59,
+   "n_features": 9,
+   "megabytes_float32": 33.2,
+   "peak_rss_gb": 1.55
+  },
+  "morpho": {
+   "seconds": 44.48,
+   "n_features": 52,
+   "megabytes_float32": 191.7,
+   "peak_rss_gb": 1.55
+  }
+ },
+ "extract_seconds_per_subject": 83.08,
+ "extract_peak_rss_gb": 1.55,
+ "training_set_seconds": 8.83,
+ "training_set_rows": 135000,
+ "fit_seconds": 31.74,
+ "n_params": 408,
+ "inference_seconds_per_volume": 3.74,
+ "n_voxels_in_mask": 921422,
+ "peak_rss_gb": 2.11,
+ "model_size_kilobytes": 3.9,
+ "model_weights_kilobytes": 3.19
+}

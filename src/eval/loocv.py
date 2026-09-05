@@ -45,15 +45,50 @@ def build_training_set(
     boundary_frac: float,
     rng: np.random.Generator,
     stats: dict[int, tuple] | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Chaque sujet est standardisé par SES PROPRES statistiques avant concaténation."""
-    Xs, ys = [], []
+) -> tuple[np.ndarray, np.ndarray, dict[int, tuple[int, int, np.ndarray]]]:
+    """Chaque sujet est standardisé par SES PROPRES statistiques avant concaténation.
+
+    Rend aussi `blocks` : subject_id -> (début, fin, indices échantillonnés triés), qui dit
+    quelles lignes de X viennent de quel sujet. Les modèles à contexte spatial en ont besoin
+    pour recoller une ligne à sa position dans le volume ; les autres l'ignorent.
+    """
+    Xs, ys, blocks, start = [], [], {}, 0
     for s in subjects:
         idx, y = sample_voxels(s, n_per_class, rng, boundary_frac=boundary_frac)
         order = np.argsort(idx)
-        Xs.append(apply_stats(extractor.transform_rows(s, idx[order]), (stats or {}).get(s.subject_id)))
+        rows = idx[order]
+        Xs.append(apply_stats(extractor.transform_rows(s, rows), (stats or {}).get(s.subject_id)))
         ys.append(y[order])
-    return np.concatenate(Xs), np.concatenate(ys)
+        blocks[s.subject_id] = (start, start + rows.size, rows)
+        start += rows.size
+    return np.concatenate(Xs), np.concatenate(ys), blocks
+
+
+class TrainContext:
+    """Ce qu'un modèle à contexte spatial doit savoir des sujets d'entraînement du pli.
+
+    Ne donne accès qu'aux sujets d'ENTRAÎNEMENT : le sujet de test n'y figure pas, et un
+    modèle ne peut donc pas atteindre sa vérité terrain par ce chemin.
+    """
+
+    def __init__(self, subjects, blocks, extractor, stats):
+        self.subjects = list(subjects)
+        self._blocks = blocks
+        self._extractor = extractor
+        self._stats = stats or {}
+
+    def rows_mask(self, subject_id: int) -> np.ndarray:
+        """Positions, dans X, des lignes venant de ce sujet."""
+        start, stop, _ = self._blocks[subject_id]
+        return np.arange(start, stop)
+
+    def sampled_rows(self, subject_id: int) -> np.ndarray:
+        """Indices (dans l'ordre du masque du sujet) des voxels échantillonnés."""
+        return self._blocks[subject_id][2]
+
+    def features(self, subject: Subject) -> np.ndarray:
+        """Matrice de features standardisées de TOUS les voxels du masque du sujet."""
+        return apply_stats(self._extractor.transform(subject), self._stats.get(subject.subject_id))
 
 
 def _summary(per_subject: dict[str, dict[str, float]]) -> tuple[dict, dict]:
@@ -137,15 +172,22 @@ def run_loocv(
             t_fold = time.time()
             rng = np.random.default_rng(seed * 1000 + test_id)
             train_subjects = [subjects[s] for s in subject_ids if s != test_id]
-            X, y = build_training_set(extractor, train_subjects, n_per_class, boundary_frac, rng, stats)
+            X, y, blocks = build_training_set(extractor, train_subjects, n_per_class, boundary_frac, rng, stats)
             t1 = time.time()
             model = model_factory()
-            model.fit(X, y)
+            if getattr(model, "needs_context", False):
+                model.fit(X, y, context=TrainContext(train_subjects, blocks, extractor, stats))
+            else:
+                model.fit(X, y)
             train_times.append(time.time() - t1)
 
             test = subjects[test_id]
             t2 = time.time()
-            proba = predict_full(model, extractor.transform(test), (stats or {}).get(test_id))
+            if getattr(model, "needs_context", False):
+                X_test = apply_stats(extractor.transform(test), (stats or {}).get(test_id))
+                proba = model.predict_proba_subject(X_test, test)
+            else:
+                proba = predict_full(model, extractor.transform(test), (stats or {}).get(test_id))
             if prior_correction:
                 sampled = np.array([np.mean(y == c) for c in TISSUE_CLASSES])
                 proba = adjust_priors(proba, sampled, class_priors(train_subjects))

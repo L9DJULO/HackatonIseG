@@ -1,0 +1,21 @@
+# Configuration finale + post-traitement spatial et topologique (src/postproc/topology.py).
+# Aucune étape n'ajoute de paramètre appris : tous les seuils sont fixés a priori.
+# NON ENCORE EXÉCUTÉE : aucun JSON correspondant dans results/.
+run_name: logreg_final_smooth
+seed: 0
+features:
+  - name: intensity
+  - name: gaussian
+  - name: spatial
+  - name: morpho
+  - name: symmetry
+  - name: context
+model:
+  name: logreg
+  config: {C: 1.0, max_iter: 300}
+sampling:
+  n_per_class: 5000
+  boundary_frac: 0.0
+  prior_correction: true
+# ordre voulu : lissage des probabilités, puis nettoyage, puis contrainte topologique en dernier
+postproc: [smooth, small_components]
