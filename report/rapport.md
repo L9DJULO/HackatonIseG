@@ -388,7 +388,7 @@ nombre de poids ne le laisserait croire.
 $0{,}8276$ à $0{,}8399$, sur les dix sujets. La sélection à 40 colonnes coûte $-0{,}0240$ de
 Dice et divise le décompte par 2,8, ce qui en fait un point du front de Pareto plutôt qu'un
 échec. Le post-traitement dégrade : $-0{,}0031$ pour le lissage et le nettoyage, $-0{,}0011$
-de plus pour la contrainte topologique. Le \secref{sec:resultats} donne les chiffres complets
+de plus pour la contrainte topologique. La \secref{sec:resultats} donne les chiffres complets
 et la \secref{sec:discussion} dit pourquoi le post-traitement échoue.
 
 Les trois mécanismes sont couverts par la suite de tests, dont un test d'intégration qui fait
@@ -493,7 +493,7 @@ $0{,}8399$, gagne sur les dix sujets, et améliore les trois métriques à la fo
 du tableau à obtenir simultanément le meilleur Dice, le meilleur ASD et le meilleur MHD.
 
 Enfin, **deux mécanismes échouent, et nous les gardons dans le tableau**. Le post-traitement
-dégrade ; l'arbre des formes n'apporte rien contre la paire max-tree / min-tree. Les
+dégrade ; l'arbre des formes n'apporte rien contre la paire max-tree / min-tree. La
 \secref{sec:discussion} y revient.
 
 | configuration | param. | LCR | SG | SB | Dice moyen |
