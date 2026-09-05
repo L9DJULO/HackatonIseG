@@ -11,6 +11,18 @@ def test_count_linear_conventions():
     assert count_linear(151, redundant=False) == 2 * 152
 
 
+def test_convention_inverse_du_rapport():
+    """Le rapport (§ 3.5) donne 456 et 758 comme deux décomptes EXACTS de la même
+    configuration, sous les deux conventions possibles pour le scaler intra-sujet.
+    L'argument en ordres de grandeur repose sur le fait que ces deux nombres tombent dans
+    la même tranche ; il tombe si l'un des deux est faux. On les recompte donc ici.
+    """
+    F = 151
+    compte, compte_inverse = count_linear(F), count_linear(F) + 2 * F
+    assert (compte, compte_inverse) == (456, 758)
+    assert int(np.floor(np.log10(compte))) == int(np.floor(np.log10(compte_inverse))) == 2
+
+
 def test_count_mlp():
     # 10 -> 4 -> 3 : (10*4+4) + (4*3+3) = 44 + 15
     assert count_mlp(10, [4]) == 59

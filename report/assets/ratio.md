@@ -30,4 +30,4 @@ En ordres de grandeur, le constat est d'une autre nature : **nos 12 configuratio
 
 Cette lecture ne dit quelque chose que lorsque la tranche change. C'est le cas contre le challenge, dont les deux méthodes au décompte publié sont en $10^{6}$ et $10^{7}$, soit quatre à cinq tranches au-dessus. Et c'est le cas contre le classifieur dégénéré, deux tranches en dessous : son Dice de 0.21 l'élimine immédiatement, ce qu'aucun ratio brut ne faisait.
 
-C'est la propriété qu'on demande à cette lecture : elle est trop grossière pour être abusée par une différence de comptage, et elle oblige à regarder le Dice partout où elle est muette.
+C'est la propriété qu'on demande à cette lecture. Elle ne dispense pas de compter juste : les décomptes ci-dessus sont exacts, et c'est parce qu'ils le sont qu'un désaccord raisonnable sur la frontière du comptage laisse la tranche inchangée. Elle oblige en outre à regarder le Dice partout où elle est muette.

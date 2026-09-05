@@ -176,9 +176,10 @@ def main() -> None:
         f"classifieur dégénéré, {ecart(t_nous, t_deg)} en dessous : son Dice de "
         f"{deg['dice_mean']:.2f} l'élimine immédiatement, ce qu'aucun ratio brut ne faisait.",
         "",
-        "C'est la propriété qu'on demande à cette lecture : elle est trop grossière pour être "
-        "abusée par une différence de comptage, et elle oblige à regarder le Dice partout où "
-        "elle est muette.",
+        "C'est la propriété qu'on demande à cette lecture. Elle ne dispense pas de compter "
+        "juste : les décomptes ci-dessus sont exacts, et c'est parce qu'ils le sont qu'un "
+        "désaccord raisonnable sur la frontière du comptage laisse la tranche inchangée. Elle "
+        "oblige en outre à regarder le Dice partout où elle est muette.",
     ]
     (ROOT / "report" / "assets" / "ratio.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines[6:]))

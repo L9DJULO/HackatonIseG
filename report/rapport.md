@@ -17,8 +17,10 @@ abstract: |
   appris, et une variante à 163 paramètres en atteint encore 0,8036 ; la méthode classée
   première du challenge emploie 1,55 million de paramètres. Nous montrons pourquoi le rapport
   brut du Dice au nombre de paramètres ne peut pas servir de critère de sélection, nous lui
-  substituons une lecture en ordres de grandeur, assez grossière pour ne dépendre d'aucune
-  convention de comptage, et un front de Pareto ; et nous rapportons trois résultats négatifs : l'auto-dualité
+  substituons un front de Pareto et une comparaison en ordres de grandeur. Notre décompte est
+  exact, sa règle est écrite et nous donnons le chiffre selon la convention inverse : c'est
+  cette rigueur qui autorise la lecture grossière, et non le contraire. Nous rapportons enfin
+  trois résultats négatifs : l'auto-dualité
   de l'arbre des formes ne produit aucun gain de Dice distinguable, notre post-traitement
   topologique dégrade la segmentation parce qu'il repose sur une hypothèse anatomique fausse aux
   ventricules, et la quantification à 64 niveaux ne fait économiser rien de mesurable. Nos
@@ -449,15 +451,18 @@ train de segmenter, à l'entraînement comme à l'inférence. Elle ne mémorise 
 d'entraînement, et segmenter un nouveau sujet ne demande de transporter aucune de ces
 valeurs : c'est le même statut qu'un filtre gaussien ou qu'un calcul d'aire.
 
-Un jury peut être en désaccord avec cette frontière, et il doit trouver son propre chiffre
-ici plutôt que d'avoir à le reconstituer. **Selon la convention inverse, où le scaler serait
-compté, la configuration finale passe de 456 à 758 paramètres** : $2 \times 151$ valeurs de
-plus, une moyenne et un écart-type par colonne.
+Un jury peut être en désaccord avec cette frontière, et il doit trouver son propre chiffre ici
+plutôt que d'avoir à le reconstituer. **Selon la convention inverse, où le scaler serait compté,
+la configuration finale passe de 456 à 758 paramètres** : $2 \times 151$ valeurs de plus, une
+moyenne et un écart-type par colonne. Les deux nombres sont des décomptes exacts, pas des
+estimations : 456 est $3 \times (151 + 1)$, 758 est $456 + 2 \times 151$, et un test recompte
+les deux à chaque exécution.
 
 Et c'est ici que la lecture en ordres de grandeur retenue en \secref{sec:probleme} montre son
-second mérite, qui n'est pas cosmétique. **Changer de convention déplace le ratio brut de
-$-40$ \%. Il ne déplace pas la tranche du tout** : 456 et 758 sont l'un et l'autre à quelques
-centaines, tranche $10^2$. Un désaccord sur la frontière entre « paramètre appris » et
+second mérite. **Changer de convention déplace le ratio brut de $-40$ \%. Il ne déplace pas la
+tranche du tout** : 456 et 758 sont l'un et l'autre à quelques centaines, tranche $10^2$. La
+lecture est grossière parce que les deux comptes sont exacts et qu'ils tombent dans la même
+tranche — pas parce que le décompte serait incertain. Un désaccord sur la frontière entre « paramètre appris » et
 « opération » ferait donc basculer un classement fondé sur le ratio brut, et ne changerait
 rigoureusement rien à un classement fondé sur les ordres de grandeur. Dans les deux cas, quatre
 tranches séparent notre modèle du million et demi de paramètres de la méthode classée
@@ -490,7 +495,7 @@ inter-sujets, le test des rangs signés de Wilcoxon bilatéral, deux tailles d'e
 Cohen apparié et $\delta$ de Cliff — et le nombre de sujets améliorés sur dix. Ce dernier
 mérite sa justification : à $n = 10$ l'amplitude d'un gain est bruitée, sa systématicité ne
 l'est pas. Un effet est déclaré distinguable du bruit si la p-valeur ajustée descend sous 0,05
-**et** si au moins huit sujets sur dix vont dans le même sens. Le critère est symétrique : une
+**et** si au moins huit sujets sur dix vont dans le même sens. La règle est symétrique : une
 dégradation systématique reste un résultat.
 
 Les quatorze comparaisons forment une liste fixe, écrite dans `scripts/report_assets.py` avant
