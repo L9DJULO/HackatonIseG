@@ -29,6 +29,8 @@ import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from src.eval.official import load_official_scores, XLSX_NAME, TISSUES
 REPORT = ROOT / "report" / "rapport.md"
 ASSETS = ROOT / "report" / "assets"
 RESULTS = ROOT / "results"
@@ -244,7 +246,7 @@ def assertions() -> list[tuple[str, float, float, int]]:
         ("Pareto : facteur de paramètres MSL_SKKU / auto-contexte",
          MSL_SKKU_PARAMS / ac["n_params"], 1651, 0),
         ("Pareto : fraction du Dice MSL_SKKU atteinte par l'auto-contexte",
-         100 * mean(dice_means("autocontext_final")) / ref, 90.5, 1),
+         100 * load_official_scores(RESULTS / XLSX_NAME)['dice_mean'] / ref, 91.0, 1),
         ("Pareto : fraction du Dice atteinte par la sélection K=40",
          100 * mean(dice_means("select_k40")) / ref, 86.6, 1),
         ("ordre de grandeur bas : MSL_SKKU / auto-contexte",
@@ -286,6 +288,54 @@ def assertions() -> list[tuple[str, float, float, int]]:
          / (mean(dice_means("autocontext_final")) / ac["n_params"]), 239, 0),
     ]
     return a
+
+
+def check_official(text: str) -> list[str]:
+    """Contrôle contextualisé des tableaux, et non simple présence dans un index global."""
+    scores = load_official_scores(RESULTS / XLSX_NAME)
+    sub = load('submission')
+    problems = []
+    if sub['trained_on'] != list(range(1, 11)) or sub['predicted'] != scores['subjects']:
+        problems.append('soumission : listes de sujets incompatibles')
+    if sub['n_params'] != load('autocontext_final')['n_params']:
+        problems.append('soumission : décompte différent du modèle interne')
+    section = text.split('## Résultats sur les treize sujets du test officiel')[1].split('## Comparaison aux méthodes')[0]
+    for label, t in [('LCR', 'csf'), ('substance grise', 'gm'), ('substance blanche', 'wm')]:
+        line = next((l for l in section.splitlines() if l.startswith('| '+label+' ')), '')
+        values = [v for v, _, _, _ in numbers_in(line)]
+        expected = [scores[k][f'{m}_{t}'] for m in ('dice', 'asd', 'mhd') for k in ('mean', 'std')]
+        decimals = [4, 4, 3, 3, 2, 2]
+        if len(values) != 6 or any(abs(v-round(e,d)) > 1e-9 for v,e,d in zip(values, expected, decimals)):
+            problems.append(f'tableau officiel : valeurs incorrectes pour {label}')
+    for literal in ('0,8445', '0,8600', '0,8226', '0,0113'):
+        if literal not in section:
+            problems.append(f'résultat officiel manquant : {literal}')
+    loo = load('autocontext_final')['mean']
+    for key, expected in [('dice_mean', .0047), ('dice_csf', .0079), ('dice_gm', .0038), ('dice_wm', .0022)]:
+        if round(scores['mean'][key]-loo[key], 4) != expected:
+            problems.append(f'écart test/LOO à mettre à jour : {key}')
+    # Moyennes officielles citées dans le résumé, l'introduction et la conclusion.
+    for name, segment in [('résumé', text.split('# Introduction')[0]),
+                          ('introduction', text.split('# Introduction')[1].split('# Données')[0]),
+                          ('conclusion', text.split('# Conclusion')[1])]:
+        if '0,8445' not in segment or '939' not in segment:
+            problems.append(f'{name} : score officiel ou paramètres manquants')
+    published = load('published_references')['methods']
+    for label, vals in [('notre soumission', scores['mean']), *published.items()]:
+        line = next((l for l in text.splitlines() if l.startswith('| '+label.replace('_', r'\_')+' |')), '')
+        actual = [v for v, _, _, _ in numbers_in(line)]
+        expected = [round(vals[f'{m}_{t}'], 3) for m in ('mhd', 'asd') for t in TISSUES]
+        if actual != expected:
+            problems.append(f'tableau des distances publiées : {label}')
+    keys = set(re.findall(r'@\w+\{([^,]+),', (ROOT/'report/refs.bib').read_text(encoding='utf-8')))
+    cited = set(re.findall(r'@([a-zA-Z][\w-]+)', text))
+    if keys != cited:
+        problems.append(f'citations incohérentes : non citées={keys-cited}, absentes={cited-keys}')
+    html_conflict = '< !--'.replace(' ', '') + 'CON' + 'FLIT'
+    unresolved = r'\[\[CHIFFRE:|' + html_conflict + r'|^' + '<' * 7 + r' '
+    if re.search(unresolved, text, re.M):
+        problems.append('marqueur non résolu')
+    return problems
 
 
 def check_pvalues(text: str) -> list[str]:
@@ -332,6 +382,7 @@ def main() -> int:
         print(f"  ligne {line:>4} : « {lit} »  ({value})")
 
     pv = check_pvalues(text)
+    pv.extend(check_official(text))
     print(f"p-valeurs  : {len(pv)} anomalie(s)")
     for msg in pv:
         print(msg)

@@ -2,7 +2,7 @@
 
 # Chiffres citables dans le rapport
 
-Généré par `make report-assets`. Chaque valeur vient d'un JSON de `results/`.
+Généré par `make report-assets`. Sources : JSON de `results/`, classeur officiel et références publiées sourcées.
 Aucun chiffre du rapport ne doit être écrit sans figurer ici.
 
 | chiffre | valeur | source |
@@ -204,3 +204,58 @@ Aucun chiffre du rapport ne doit être écrit sans figurer ici.
 | logreg_final — bloc morpho, secondes par sujet | 23.5 | `results/cost_logreg_final.json` |
 | logreg_final — bloc symmetry, secondes par sujet | 0.5 | `results/cost_logreg_final.json` |
 | logreg_final — bloc context, secondes par sujet | 0.7 | `results/cost_logreg_final.json` |
+| Dice moyen sur le jeu de test officiel | 0.8445 | `evaluation_result_iseg2017_results.xlsx` |
+| sujets de test évalués par le serveur | 13 (sujets 11–23) | `evaluation_result_iseg2017_results.xlsx` |
+| écart-type inter-sujets du Dice moyen, test | 0.0113 | `evaluation_result_iseg2017_results.xlsx` |
+| DICE LCR, test officiel | 0.8992 ± 0.0111 | `evaluation_result_iseg2017_results.xlsx` |
+| ASD LCR, test officiel | 0.2972 ± 0.0307 mm | `evaluation_result_iseg2017_results.xlsx` |
+| MHD LCR, test officiel | 10.7718 ± 0.9398 mm | `evaluation_result_iseg2017_results.xlsx` |
+| DICE SG, test officiel | 0.8375 ± 0.0124 | `evaluation_result_iseg2017_results.xlsx` |
+| ASD SG, test officiel | 0.6141 ± 0.0408 mm | `evaluation_result_iseg2017_results.xlsx` |
+| MHD SG, test officiel | 8.2996 ± 1.4583 mm | `evaluation_result_iseg2017_results.xlsx` |
+| DICE SB, test officiel | 0.7968 ± 0.0194 | `evaluation_result_iseg2017_results.xlsx` |
+| ASD SB, test officiel | 0.7984 ± 0.0653 mm | `evaluation_result_iseg2017_results.xlsx` |
+| MHD SB, test officiel | 12.7655 ± 2.0728 mm | `evaluation_result_iseg2017_results.xlsx` |
+| meilleur sujet de test | sujet 13, Dice 0.8600 | `evaluation_result_iseg2017_results.xlsx` |
+| pire sujet de test | sujet 20, Dice 0.8226 | `evaluation_result_iseg2017_results.xlsx` |
+| écart test − leave-one-out, Dice LCR | +0.0079 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| écart test − leave-one-out, Dice SG | +0.0038 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| écart test − leave-one-out, Dice SB | +0.0022 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| écart test − leave-one-out, Dice moyen | +0.0047 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| rapport MHD serveur / MHD interne, LCR | ×9.6 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| rapport MHD / ASD du serveur, LCR | ×36.2 | `evaluation_result_iseg2017_results.xlsx` |
+| rapport MHD serveur / MHD interne, SG | ×6.9 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| rapport MHD / ASD du serveur, SG | ×13.5 | `evaluation_result_iseg2017_results.xlsx` |
+| rapport MHD serveur / MHD interne, SB | ×5.2 | `evaluation_result_iseg2017_results.xlsx + autocontext_final.json` |
+| rapport MHD / ASD du serveur, SB | ×16.0 | `evaluation_result_iseg2017_results.xlsx` |
+| MSL_SKKU — n_params | 1550000 | `results/published_references.json` |
+| MSL_SKKU — dice_csf | 0.958 | `results/published_references.json` |
+| MSL_SKKU — dice_gm | 0.923 | `results/published_references.json` |
+| MSL_SKKU — dice_wm | 0.904 | `results/published_references.json` |
+| MSL_SKKU — mhd_csf | 9.112 | `results/published_references.json` |
+| MSL_SKKU — mhd_gm | 5.999 | `results/published_references.json` |
+| MSL_SKKU — mhd_wm | 6.618 | `results/published_references.json` |
+| MSL_SKKU — asd_csf | 0.116 | `results/published_references.json` |
+| MSL_SKKU — asd_gm | 0.321 | `results/published_references.json` |
+| MSL_SKKU — asd_wm | 0.375 | `results/published_references.json` |
+| MSL_SKKU — Dice moyen publié | 0.9283 | `https://arxiv.org/pdf/1804.02967#page=7` |
+| HyperDenseNet — n_params | 10349450 | `results/published_references.json` |
+| HyperDenseNet — dice_csf | 0.956 | `results/published_references.json` |
+| HyperDenseNet — dice_gm | 0.92 | `results/published_references.json` |
+| HyperDenseNet — dice_wm | 0.901 | `results/published_references.json` |
+| HyperDenseNet — mhd_csf | 9.421 | `results/published_references.json` |
+| HyperDenseNet — mhd_gm | 5.752 | `results/published_references.json` |
+| HyperDenseNet — mhd_wm | 6.66 | `results/published_references.json` |
+| HyperDenseNet — asd_csf | 0.12 | `results/published_references.json` |
+| HyperDenseNet — asd_gm | 0.329 | `results/published_references.json` |
+| HyperDenseNet — asd_wm | 0.382 | `results/published_references.json` |
+| HyperDenseNet — Dice moyen publié | 0.9257 | `https://arxiv.org/pdf/1804.02967#page=7` |
+| Test — pourcentage du Dice de MSL_SKKU | 91.0 | `classeur officiel + published_references.json` |
+| Test — pourcentage du Dice MSL_SKKU LCR | 93.9 | `classeur officiel + published_references.json` |
+| Test — pourcentage du Dice MSL_SKKU SG | 90.7 | `classeur officiel + published_references.json` |
+| Test — pourcentage du Dice MSL_SKKU SB | 88.1 | `classeur officiel + published_references.json` |
+| Sélection — paramètres économisés | 293 | `456 - 163` |
+| Sélection — réduction en pourcentage | 64.3 | `logreg_final.json + select_k40.json` |
+| Auto-contexte — convention alternative | 1241 | `939 + 2*151` |
+| Soumission — entraînement en secondes | 320.1 | `results/submission.json` |
+| Soumission — secondes moyennes par sujet | 86.7 | `results/submission.json` |

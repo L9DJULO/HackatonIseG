@@ -1,11 +1,21 @@
----
-title: "Segmentation frugale des IRM cérébrales de nourrissons en phase isointense"
-subtitle: "Hackathon SCIA 2026 — sujet 2, challenge MICCAI iSeg-2017"
-author:
-  - Jules Lange
-  - "Arthur Goullet De Rugy"
-date: "septembre 2026"
-abstract: |
+"""Passe éditoriale finale : conserver les figures et les tableaux déjà vérifiés."""
+from pathlib import Path
+import re
+
+root = Path(__file__).resolve().parents[1]
+p = root / 'report/rapport.md'
+old = p.read_text(encoding='utf-8')
+figs = re.findall(r'\\begin\{figure\}.*?\\end\{figure\}', old, re.S)
+def figure(index, caption, width='0.94'):
+    f = figs[index]
+    path = re.search(r'\\includegraphics\[.*?\]\{(.*?)\}', f).group(1)
+    label = re.search(r'\\label\{(.*?)\}', f).group(1)
+    return '\n'.join([r'\begin{figure}[htbp]', r'\centering',
+        rf'\includegraphics[width={width}\linewidth]{{{path}}}',
+        rf'\caption{{{caption}}}', rf'\label{{{label}}}', r'\end{figure}'])
+
+header = old.split('---', 2)[1]
+header = re.sub(r'abstract: \|.*?\nlang:', '''abstract: |
   Pendant ce hackathon, nous avons étudié la segmentation des IRM de nourrissons
   avec un modèle qui apprend peu de paramètres. Notre solution combine des descripteurs
   d'intensité, de position et de morphologie avec une régression logistique à deux étages.
@@ -16,25 +26,9 @@ abstract: |
   Le modèle reste nettement moins précis que les références publiées, notamment sur
   les distances de surface. Ce travail montre un compromis entre qualité de segmentation
   et nombre de paramètres, avec les limites d'une expérimentation de hackathon.
-lang: fr
-documentclass: article
-papersize: a4
-fontsize: 11pt
-geometry:
-  - margin=2.4cm
-mainfont: "Latin Modern Roman"
-sansfont: "Latin Modern Sans"
-monofont: "Latin Modern Mono"
-numbersections: true
-secnumdepth: 3
-colorlinks: true
-linkcolor: black
-citecolor: black
-urlcolor: black
-link-citations: true
-reference-section-title: "Références"
----
+lang:''', header, flags=re.S)
 
+body = r'''
 # Introduction
 
 Le but du projet est de segmenter une IRM cérébrale en trois tissus : liquide
@@ -48,12 +42,7 @@ des histogrammes SG/SB vaut $0{,}701 \pm 0{,}048$ en T1 et $0{,}867 \pm 0{,}041$
 Ces valeurs décrivent une difficulté de séparation par intensité ; elles ne constituent
 pas une limite générale de performance pour tous les classifieurs.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.94\linewidth]{report/assets/fig01_isointense.pdf}
-\caption{Phase isointense sur le sujet 3 : T1, T2, référence et histogrammes SG/SB. Le recouvrement est la somme des minimums des fréquences des deux histogrammes, sur 256 classes : 0 indique des distributions disjointes, 1 des distributions identiques.}
-\label{fig:isointense}
-\end{figure}
+@@FIG0@@
 
 La contrainte du hackathon nous a conduits à chercher une solution simple à entraîner et
 économe en paramètres. Nous calculons des descripteurs sur chaque image, puis nous les
@@ -112,12 +101,7 @@ sujet. Les coefficients de la régression logistique sont, eux, appris sur l'ent
 Le calcul des descripteurs ne coûte donc aucun paramètre appris, mais il prend du temps
 et de la mémoire. Nous distinguons ces deux coûts.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.94\linewidth]{report/assets/fig02_pipeline.pdf}
-\caption{Construction des 151 descripteurs et classifieur de base. La soumission ajoute un second étage d’auto-contexte, décrit en \secref{sec:classifieur}.}
-\label{fig:pipeline}
-\end{figure}
+@@FIG1@@
 
 ## Les six blocs de descripteurs
 
@@ -157,12 +141,7 @@ ainsi être rattachée à une région plus grande qui l'entoure. Nous utilisons 
 Higra [@perret2019higra], avec son calcul de l'arbre en trois dimensions ; les algorithmes
 associés sont décrits notamment par Géraud et al. [@geraud2013quasilinear].
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.94\linewidth]{report/assets/fig03_shapes.pdf}
-\caption{Arbre des formes sur une image de synthèse. La branche du voxel $p$ relie les régions emboîtées. Les lignes horizontales indiquent les seuils utilisés pour sélectionner des ancêtres.}
-\label{fig:tos}
-\end{figure}
+@@FIG2@@
 
 Pour chaque voxel, nous partons du plus petit nœud qui le contient. Nous lisons six
 attributs : aire relative, profondeur, contraste avec le parent, dynamique, sphéricité
@@ -262,8 +241,7 @@ grande population. Les détails sont conservés dans `report/assets/stats.md`.
 Le classeur du serveur est conservé dans `results/`. Ses moyennes et écarts-types sont
 recalculés par le script de génération et vérifiés contre ceux du classeur.
 
-**Distances.** Le code interne mesure les distances des voxels de frontière au masque de l’autre segmentation
-(prédiction vers référence et réciproquement), puis une moyenne et un 95\textsuperscript{e}
+**Distances.** Le code interne utilise une ASD symétrique et un 95\textsuperscript{e}
 percentile des distances de surface, nommé MHD dans nos JSON. L'article du challenge
 décrit aussi une distance HD95 [@wang2019iseg]. Nous n'avons cependant pas vérifié
 l'équivalence exacte entre l'implémentation locale et celle du serveur. Les comparaisons
@@ -273,24 +251,7 @@ avec les publications utilisent donc uniquement nos distances officielles.
 
 ## Comparaison des variantes en leave-one-out
 
-| configuration | param. | LCR | SG | SB | Dice moyen |
-|:------------------------------------------|-------:|------:|------:|------:|-----------:|
-| A+B+C, sans morphologie (référence)        | 252 | 0,851 | 0,805 | 0,761 | 0,8055 |
-| palier 0 : max-tree + min-tree             | 324 | 0,866 | 0,813 | 0,767 | 0,8156 |
-| palier 1 : + remontée de branche           | 564 | 0,868 | 0,818 | 0,772 | 0,8191 |
-| palier 2 : arbre des formes + remontée     | 408 | 0,866 | 0,814 | 0,766 | 0,8154 |
-| palier 3 : + filtres de grain              | 426 | 0,866 | 0,814 | 0,766 | 0,8154 |
-| palier 2, quantification 64 niveaux        | 408 | 0,866 | 0,814 | 0,765 | 0,8149 |
-| palier 2, quantification par rang          | 408 | 0,862 | 0,813 | 0,766 | 0,8136 |
-| sélection des 40 meilleures colonnes       | 163 | 0,861 | 0,804 | 0,746 | 0,8036 |
-| configuration finale : tous les blocs      | 456 | 0,881 | 0,825 | 0,777 | 0,8276 |
-| finale + lissage et nettoyage              | 456 | 0,876 | 0,825 | 0,773 | 0,8246 |
-| finale + contrainte topologique            | 456 | 0,877 | 0,823 | 0,770 | 0,8235 |
-| **finale + auto-contexte**                 | **939** | **0,891** | **0,834** | **0,795** | **0,8399** |
-
-: Dice en leave-one-out sur les dix sujets annotés. Les écarts-types et les distances
-sont disponibles dans `report/assets/ablation.md` et `distances.md`. \label{tab:ablation}
-
+@@ABLATION@@
 
 Le premier bloc morphologique apporte $+0{,}0102$ de Dice moyen par rapport à A+B+C.
 La remontée de branche ajoute $+0{,}0035$ à cette variante. Dans les deux cas, les dix
@@ -305,26 +266,11 @@ topologique ajoute une baisse de $0{,}0011$. Seule cette baisse supplémentaire 
 significative selon notre règle corrigée. Les filtres de grain et la quantification par
 rang n'apportent pas de gain démontré.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.94\linewidth]{report/assets/fig05_ablation.pdf}
-\caption{Ablation en leave-one-out : Dice et intervalles de confiance à 95 \% à gauche ; écarts appariés à droite. Comparer chaque sujet à lui-même réduit une partie de la variabilité entre sujets.}
-\label{fig:ablation}
-\end{figure}
+@@FIG4@@
 
 ## Résultats sur les treize sujets du test officiel
 
-| tissu | Dice | ASD (mm) | MHD (mm) |
-|:------------------|----------------:|--------------:|-------------:|
-| LCR               | 0,8992 ± 0,0111 | 0,297 ± 0,031 | 10,77 ± 0,94 |
-| substance grise   | 0,8375 ± 0,0124 | 0,614 ± 0,041 | 8,30 ± 1,46  |
-| substance blanche | 0,7968 ± 0,0194 | 0,798 ± 0,065 | 12,77 ± 2,07 |
-| **moyenne des trois** | **0,8445**  |               |              |
-
-: Scores rendus par le serveur d'évaluation iSeg-2017 sur les treize sujets de test, pour la
-configuration à auto-contexte et ses 939 paramètres appris, entraînée sur les dix sujets
-annotés. Moyennes et écarts-types sur les treize sujets. Extrait de
-`report/assets/test_results.md`. \label{tab:test}
+@@TEST@@
 
 Le Dice moyen officiel est **0,8445**. Le meilleur sujet de test est le 13, à 0,8600 ;
 le moins bon est le 20, à 0,8226. L'écart-type du Dice moyen entre sujets vaut 0,0113.
@@ -339,12 +285,7 @@ dont nous n'avons pas les annotations.
 
 ## Comparaison aux méthodes publiées et front de Pareto
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.94\linewidth]{report/assets/fig04_pareto.pdf}
-\caption{Compromis paramètres--Dice. Le front relié et le zoom concernent uniquement le leave-one-out. Le point de test officiel est distinct et se compare aux deux références publiées. Les comptes des références sont ceux des réseaux publiés ; celui de MSL\_SKKU ne décrit pas nécessairement son ensemble de modèles.}
-\label{fig:pareto}
-\end{figure}
+@@FIG3@@
 
 Les scores de MSL\_SKKU et HyperDenseNet sont ceux du second tour rapportés dans le
 tableau 5 de Dolz et al. [@dolz2019hyperdensenet]. Ils portent sur le test iSeg-2017.
@@ -398,12 +339,7 @@ n'avons pas de raison expérimentale de retenir cette variante.
 
 ## Exemples qualitatifs
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.94\linewidth]{report/assets/fig06_qualitative.pdf}
-\caption{Meilleur et moins bon sujet du leave-one-out de l’auto-contexte. Les cartes d’erreur utilisent les annotations disponibles sur ces sujets ; elles ne concernent pas le test officiel.}
-\label{fig:qualitatif}
-\end{figure}
+@@FIG5@@
 
 La figure montre le meilleur et le moins bon sujet du leave-one-out de l'auto-contexte :
 le sujet 8 obtient 0,8506 et le sujet 2 obtient 0,8215. La coupe est choisie avec la même
@@ -475,3 +411,20 @@ Le hackathon nous a surtout permis de vérifier quelles idées apportaient quelq
 le contexte améliore nos essais, l'auto-dualité réduit la taille sans gain de Dice démontré,
 et le post-traitement testé n'est pas retenu. La suite serait de mieux comprendre les
 erreurs de contour et de compléter les mesures de coût avant de complexifier le modèle.
+'''
+
+ablation = old[old.index('| configuration | param. | LCR'):old.index('## Le score officiel')].strip()
+ablation = ablation[:ablation.index(': Ablation')] + ': Dice en leave-one-out sur les dix sujets annotés. Les écarts-types et les distances\nsont disponibles dans `report/assets/ablation.md` et `distances.md`. \\label{tab:ablation}\n'
+test = old[old.index('| tissu | Dice | ASD'):old.index('**Le test ne tombe')].strip()
+captions = [
+    r'Phase isointense sur le sujet 3 : T1, T2, référence et histogrammes SG/SB. Le recouvrement est la somme des minimums des fréquences des deux histogrammes, sur 256 classes : 0 indique des distributions disjointes, 1 des distributions identiques.',
+    r'Construction des 151 descripteurs et classifieur de base. La soumission ajoute un second étage d’auto-contexte, décrit en section~3.4.',
+    r'Arbre des formes sur une image de synthèse. La branche du voxel $p$ relie les régions emboîtées. Les lignes horizontales indiquent les seuils utilisés pour sélectionner des ancêtres.',
+    r'Compromis paramètres--Dice. Le front relié et le zoom concernent uniquement le leave-one-out. Le point de test officiel est distinct et se compare aux deux références publiées. Les comptes des références sont ceux des réseaux publiés ; celui de MSL\_SKKU ne décrit pas nécessairement son ensemble de modèles.',
+    r'Ablation en leave-one-out : Dice et intervalles de confiance à 95 \% à gauche ; écarts appariés à droite. Comparer chaque sujet à lui-même réduit une partie de la variabilité entre sujets.',
+    r'Meilleur et moins bon sujet du leave-one-out de l’auto-contexte. Les cartes d’erreur utilisent les annotations disponibles sur ces sujets ; elles ne concernent pas le test officiel.'
+]
+for i in range(6):
+    body = body.replace(f'@@FIG{i}@@', figure(i, captions[i]))
+body = body.replace('@@ABLATION@@', ablation).replace('@@TEST@@', test)
+p.write_text('---'+header+'---\n'+body, encoding='utf-8')

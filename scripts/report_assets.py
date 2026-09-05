@@ -8,6 +8,7 @@ Produit :
   report/assets/distances.md   ASD et MHD par tissu : les deux autres métriques officielles
   report/assets/frugality.md   budget de frugalité mesuré (temps, mémoire, taille du modèle)
   report/assets/facts.md       chaque chiffre citable, avec son nom, sa valeur et son JSON source
+  report/assets/test_results.md scores officiels du serveur iSeg-2017 sur les 13 sujets de test
 """
 from __future__ import annotations
 
@@ -17,6 +18,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from src.eval.official import (  # noqa: E402
+    FR, TISSUES, load_official_scores, mhd_ratio_to_loo, XLSX_NAME,
+)
 from src.eval.stats import apply_holm, compare, format_table  # noqa: E402
 
 RESULTS = ROOT / "results"
@@ -211,11 +215,97 @@ def frugality_table() -> str:
     return "\n".join(lines) + "\n" + garde + "\n".join(detail)
 
 
+# La configuration effectivement envoyee au serveur, d'apres results/submission.json.
+SUBMITTED = "autocontext_final"
+
+
+def test_results_table(runs: dict[str, dict]) -> str:
+    """report/assets/test_results.md : les scores officiels, et ce qu'ils disent du protocole."""
+    xlsx = RESULTS / XLSX_NAME
+    if not xlsx.exists():
+        return ""
+    sc = load_official_scores(xlsx)
+    sub = json.loads((RESULTS / "submission.json").read_text())
+    loo = runs[SUBMITTED]["mean"]
+    src = XLSX_NAME
+
+    n = len(sc["subjects"])
+    fact("Dice moyen sur le jeu de test officiel", f"{sc['dice_mean']:.4f}", src)
+    fact("sujets de test évalués par le serveur", f"{n} (sujets {sc['subjects'][0]}–{sc['subjects'][-1]})", src)
+    fact("écart-type inter-sujets du Dice moyen, test", f"{_std_of_means(sc):.4f}", src)
+    for t in TISSUES:
+        for m, unit in (("dice", ""), ("asd", " mm"), ("mhd", " mm")):
+            fact(f"{m.upper()} {FR[t]}, test officiel",
+                 f"{sc['mean'][f'{m}_{t}']:.4f} ± {sc['std'][f'{m}_{t}']:.4f}{unit}", src)
+    for lbl, sid in (("meilleur", sc["best_subject"]), ("pire", sc["worst_subject"])):
+        fact(f"{lbl} sujet de test", f"sujet {sid}, Dice {sc['per_subject'][sid]['dice_mean']:.4f}", src)
+    for t in TISSUES:
+        d = sc["mean"][f"dice_{t}"] - loo[f"dice_{t}"]
+        fact(f"écart test − leave-one-out, Dice {FR[t]}", f"{d:+.4f}", f"{src} + {SUBMITTED}.json")
+    fact("écart test − leave-one-out, Dice moyen",
+         f"{sc['dice_mean'] - loo['dice_mean']:+.4f}", f"{src} + {SUBMITTED}.json")
+
+    ratio = mhd_ratio_to_loo(sc, loo)
+    for t in TISSUES:
+        fact(f"rapport MHD serveur / MHD interne, {FR[t]}", f"×{ratio[t]:.1f}",
+             f"{src} + {SUBMITTED}.json")
+        fact(f"rapport MHD / ASD du serveur, {FR[t]}",
+             f"×{sc['mean'][f'mhd_{t}'] / sc['mean'][f'asd_{t}']:.1f}", src)
+
+    lines = [
+        f"Modèle soumis : `{sub['run_name']}`, {sub['n_params']} paramètres appris, entraîné sur "
+        f"les {len(sub['trained_on'])} sujets annotés d'un coup (et non sur les 9 d'un pli), puis "
+        f"appliqué aux {len(sub['predicted'])} sujets de test. Source : `results/submission.json`.",
+        "",
+        "## Scores rendus par le serveur",
+        "",
+        "| tissu | Dice | ASD (mm) | MHD (mm) |",
+        "|---|---|---|---|",
+    ]
+    for t in TISSUES:
+        lines.append(f"| {FR[t]} | {sc['mean'][f'dice_{t}']:.4f} ± {sc['std'][f'dice_{t}']:.4f} "
+                     f"| {sc['mean'][f'asd_{t}']:.3f} ± {sc['std'][f'asd_{t}']:.3f} "
+                     f"| {sc['mean'][f'mhd_{t}']:.2f} ± {sc['std'][f'mhd_{t}']:.2f} |")
+    lines += [
+        f"| **moyenne des trois** | **{sc['dice_mean']:.4f}** | | |",
+        "",
+        f"Dice moyen par sujet, du meilleur au pire : "
+        + ", ".join(f"{s} ({sc['per_subject'][s]['dice_mean']:.4f})"
+                    for s in sorted(sc["subjects"], key=lambda s: -sc["per_subject"][s]["dice_mean"]))
+        + ".",
+        "",
+        "## Test contre leave-one-out, même configuration réentraînée",
+        "",
+        "| Dice | leave-one-out (10 sujets) | test officiel (13 sujets) | écart |",
+        "|---|---:|---:|---:|",
+    ]
+    for t in TISSUES:
+        lines.append(f"| {FR[t]} | {loo[f'dice_{t}']:.4f} | {sc['mean'][f'dice_{t}']:.4f} "
+                     f"| {sc['mean'][f'dice_{t}'] - loo[f'dice_{t}']:+.4f} |")
+    delta = sc["dice_mean"] - loo["dice_mean"]
+    lines += [
+        f"| moyen | {loo['dice_mean']:.4f} | {sc['dice_mean']:.4f} | **{delta:+.4f}** |",
+        "",
+        "L'écart est positif sur les trois tissus. Les sujets et les effectifs d'entraînement "
+        "diffèrent : ce constat ne démontre ni l'absence de fuite ni un biais conservateur.",
+        "",
+        "Les distances locales et officielles restent séparées. L'article du challenge décrit "
+        "HD95, mais l'équivalence des implémentations n'a pas été vérifiée. Des valeurs différentes "
+        "sur deux populations ne suffisent pas à démontrer des définitions différentes.",
+    ]
+    return "\n".join(lines)
+
+
+def _std_of_means(sc: dict) -> float:
+    import statistics as st
+    return st.stdev(sc["per_subject"][s]["dice_mean"] for s in sc["subjects"])
+
+
 def facts_file() -> str:
     lines = [
         "# Chiffres citables dans le rapport",
         "",
-        "Généré par `make report-assets`. Chaque valeur vient d'un JSON de `results/`.",
+        "Généré par `make report-assets`. Sources : JSON de `results/`, classeur officiel et références publiées sourcées.",
         "Aucun chiffre du rapport ne doit être écrit sans figurer ici.",
         "",
         "| chiffre | valeur | source |",
@@ -235,11 +325,39 @@ def main() -> None:
     distances = distances_table(runs)
     stats = stats_table(runs)
     frugality = frugality_table()
-    (ASSETS / "ablation.md").write_text(header + "# Ablation, leave-one-out sur 10 sujets\n\n" + ablation + "\n")
-    (ASSETS / "distances.md").write_text(header + "# Distances de surface : ASD et MHD par tissu\n\n" + distances + "\n")
-    (ASSETS / "stats.md").write_text(header + "# Comparaisons appariées\n\n" + stats + "\n")
-    (ASSETS / "frugality.md").write_text(header + "# Budget de frugalité\n\n" + frugality + "\n")
-    (ASSETS / "facts.md").write_text(header + facts_file() + "\n")
+    test_results = test_results_table(runs)
+    published = json.loads((RESULTS / "published_references.json").read_text(encoding="utf-8"))
+    for name, vals in published["methods"].items():
+        for key, value in vals.items():
+            if isinstance(value, (int, float)):
+                fact(f"{name} — {key}", str(value), "results/published_references.json")
+        fact(f"{name} — Dice moyen publié", f"{sum(vals[f'dice_{t}'] for t in TISSUES)/3:.4f}", published["score_source"])
+    if (RESULTS / XLSX_NAME).exists():
+        sc = load_official_scores(RESULTS / XLSX_NAME)
+        ref = published["methods"]["MSL_SKKU"]
+        dm = sum(ref[f"dice_{t}"] for t in TISSUES) / 3
+        fact("Test — pourcentage du Dice de MSL_SKKU", f"{100*sc['dice_mean']/dm:.1f}", "classeur officiel + published_references.json")
+        for t in TISSUES:
+            fact(f"Test — pourcentage du Dice MSL_SKKU {FR[t]}", f"{100*sc['mean'][f'dice_{t}']/ref[f'dice_{t}']:.1f}", "classeur officiel + published_references.json")
+    fact("Sélection — paramètres économisés", "293", "456 - 163")
+    fact("Sélection — réduction en pourcentage", f"{100*(456-163)/456:.1f}", "logreg_final.json + select_k40.json")
+    fact("Auto-contexte — convention alternative", "1241", "939 + 2*151")
+    sub = json.loads((RESULTS / "submission.json").read_text(encoding="utf-8"))
+    fact("Soumission — entraînement en secondes", str(sub["fit_seconds"]), "results/submission.json")
+    fact("Soumission — secondes moyennes par sujet", str(sub["mean_seconds_per_test_subject"]), "results/submission.json")
+    frugality += ("\n\n## Chaîne soumise à auto-contexte\n\n"
+        f"Entraînement final : {sub['fit_seconds']} s ; temps moyen par sujet de test : "
+        f"{sub['mean_seconds_per_test_subject']} s. Source : `results/submission.json`. "
+        "Pic mémoire et taille du modèle sur disque non enregistrés pour cette chaîne.\n")
+    (ASSETS / "ablation.md").write_text(header + "# Ablation, leave-one-out sur 10 sujets\n\n" + ablation + "\n", encoding="utf-8")
+    (ASSETS / "distances.md").write_text(header + "# Distances de surface : ASD et MHD par tissu\n\n" + distances + "\n", encoding="utf-8")
+    (ASSETS / "stats.md").write_text(header + "# Comparaisons appariées\n\n" + stats + "\n", encoding="utf-8")
+    (ASSETS / "frugality.md").write_text(header + "# Budget de frugalité\n\n" + frugality.rstrip() + "\n", encoding="utf-8")
+    if test_results:
+        (ASSETS / "test_results.md").write_text(
+            header + "# Scores officiels du serveur iSeg-2017, 13 sujets de test\n\n"
+            + test_results + "\n", encoding="utf-8")
+    (ASSETS / "facts.md").write_text(header + facts_file() + "\n", encoding="utf-8")
     print(f"report/assets/ régénéré : {len(runs)} runs, {len(FACTS)} chiffres référencés")
     if missing:
         print("runs absents :", ", ".join(missing))

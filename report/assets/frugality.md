@@ -47,3 +47,7 @@ Coût d'extraction par bloc, logreg_final (sujet 1) :
 | morpho | 52 | 23.5 | 192 |
 | symmetry | 4 | 0.5 | 15 |
 | context | 12 | 0.7 | 44 |
+
+## Chaîne soumise à auto-contexte
+
+Entraînement final : 320.1 s ; temps moyen par sujet de test : 86.7 s. Source : `results/submission.json`. Pic mémoire et taille du modèle sur disque non enregistrés pour cette chaîne.

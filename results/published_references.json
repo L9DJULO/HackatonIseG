@@ -1,0 +1,22 @@
+{
+  "score_source": "https://arxiv.org/pdf/1804.02967#page=7",
+  "score_location": "Table 5, second round, iSeg-2017 test",
+  "methods": {
+    "MSL_SKKU": {
+      "n_params": 1550000,
+      "parameter_scope": "published rounded single-network count; full voting ensemble not recounted",
+      "parameter_source": "https://iseg2017.web.unc.edu/wp-content/uploads/sites/14056/2019/02/Benchmark-on-Automatic-6-month-old-Infant-Brain-Segmentation-Algorithms.pdf#page=4",
+      "dice_csf": 0.958, "dice_gm": 0.923, "dice_wm": 0.904,
+      "mhd_csf": 9.112, "mhd_gm": 5.999, "mhd_wm": 6.618,
+      "asd_csf": 0.116, "asd_gm": 0.321, "asd_wm": 0.375
+    },
+    "HyperDenseNet": {
+      "n_params": 10349450,
+      "parameter_scope": "published network count, table 4",
+      "parameter_source": "https://arxiv.org/pdf/1804.02967#page=7",
+      "dice_csf": 0.956, "dice_gm": 0.920, "dice_wm": 0.901,
+      "mhd_csf": 9.421, "mhd_gm": 5.752, "mhd_wm": 6.660,
+      "asd_csf": 0.120, "asd_gm": 0.329, "asd_wm": 0.382
+    }
+  }
+}

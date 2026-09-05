@@ -26,6 +26,7 @@ grid:
 # régénère report/assets/ depuis results/*.json : tableaux, statistiques, chiffres citables
 report-assets:
 	$(PY) scripts/report_assets.py
+	$(PY) scripts/fig04_pareto.py
 
 # mesure le budget de frugalité de la configuration finale
 cost:
