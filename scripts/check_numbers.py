@@ -168,6 +168,14 @@ def mean(xs) -> float:
     return sum(xs) / len(xs)
 
 
+def stdev(xs) -> float:
+    m = mean(xs)
+    return (sum((x - m) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5
+
+
+ABC_FEATURES = 83  # colonnes des blocs A+B+C, communes à tous les paliers du bloc D
+
+
 def delta(a: str, b: str) -> float:
     return mean(dice_means(b)) - mean(dice_means(a))
 
@@ -251,6 +259,16 @@ def assertions() -> list[tuple[str, float, float, int]]:
         # § convention de comptage : ce que la convention inverse fait au ratio brut
         ("convention inverse : déplacement du ratio brut, en %",
          100 * (fin["n_params"] / 758 - 1), -40, 0),
+        # § discussion : l'auto-dualité divise par deux les colonnes du bloc morphologique.
+        # C'est le bloc qui est divisé par deux, pas le vecteur entier — 187 / 135 ne vaut
+        # pas 2, et le rapport a longtemps laissé croire le contraire.
+        ("colonnes morpho du palier 1 (deux arbres)",
+         load("logreg_ABCD_p1")["n_features"] - ABC_FEATURES, 104, 0),
+        ("colonnes morpho du palier 2 (un arbre) = la moitié",
+         load("logreg_ABCD_p2")["n_features"] - ABC_FEATURES, 52, 0),
+        # § résultats : la variabilité inter-sujets, à laquelle tous les effets sont comparés
+        ("écart-type inter-sujets du Dice moyen, configuration finale",
+         stdev(dice_means("logreg_final")), 0.010, 3),
     ]
     deg = json.loads((RESULTS / "degenerate_baseline.json").read_text())
     best_ratio_real = max(

@@ -22,6 +22,9 @@ MARQUEURS = re.compile(r"<!-- (?:CONFLIT|FIN CONFLIT)|^<<<<<<< |^>>>>>>> |^\|\|\
 # Extensions dont le contenu est du texte que nous rédigeons ou du code que nous écrivons.
 SOURCES = {".md", ".py", ".tex", ".bib", ".yaml", ".yml", ".toml", ".sh", ".txt", ".cfg"}
 
+# Ce fichier-ci cite les marqueurs qu'il traque, dans sa docstring et dans son motif.
+EXEMPT = {"tests/test_repo_hygiene.py"}
+
 
 def tracked() -> list[str]:
     out = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, check=True,
@@ -33,7 +36,7 @@ def test_aucun_marqueur_de_conflit_dans_les_sources():
     coupables = []
     for rel in tracked():
         p = ROOT / rel
-        if p.suffix not in SOURCES or not p.is_file():
+        if rel in EXEMPT or p.suffix not in SOURCES or not p.is_file():
             continue
         for n, ligne in enumerate(p.read_text(errors="replace").splitlines(), 1):
             if MARQUEURS.search(ligne):

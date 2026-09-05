@@ -219,10 +219,9 @@ le T1 seul et $0{,}867$ pour le T2 seul. Le gain est réel et il est modeste. Le
 donc six colonnes que le classifieur lit ensemble : les deux modalités z-scorées dans le
 masque, leurs rangs percentiles, leur différence, et un ratio normalisé. Le ratio ne sépare pas seul : mesuré
 avec le même estimateur, il recouvre à $0{,}831$, davantage que le T1 pris isolément. Il sert
-de coordonnée normalisée par sujet, que le classifieur croise avec les autres colonnes. Cette
-normalisation par la médiane intra-masque n'est pas cosmétique. Le gain d'acquisition varie
-d'un sujet et d'une modalité à l'autre, et un ratio sur intensités brutes s'effondre sur le
-sujet 7.
+de coordonnée normalisée par sujet, que le classifieur croise avec les autres colonnes. C'est
+la normalisation par la médiane intra-masque qui rend ce ratio comparable d'un sujet à l'autre,
+le gain d'acquisition variant d'une acquisition à la suivante.
 
 **B — gaussiennes (68 colonnes).** Une intensité ne dit rien de la forme locale du signal.
 Un voxel au sommet d'une crête, un voxel dans une nappe fine et un voxel au milieu d'un
@@ -313,14 +312,13 @@ façon, l'image quantifiée est identique et tout ce qui en découle l'est aussi
 affine est exacte. Sous une transformation croissante quelconque, une correction gamma par
 exemple, les classes de quantification ne coïncident plus avec les lignes de niveau, et les
 attributs qui lisent des altitudes — contraste, dynamique, résidu — changent. La variante
-qui conserve cette invariance, une quantification par rang percentile, existe dans le code
-et nous l'avons mesurée en leave-one-out : elle perd $0{,}0018$ de Dice moyen, avec 2 sujets
-améliorés sur 10 et $p = 0{,}064$, ce qui ne la distingue pas du bruit
-(\secref{sec:resultats}). Nous gardons la quantification linéaire parce que les volumes
-iSeg sont déjà corrigés en inhomogénéité de champ, ce qui rend l'invariance non linéaire peu
-utile ici, et parce que les niveaux linéaires préservent les amplitudes de contraste que les
-attributs exploitent. Nous revendiquons donc l'auto-dualité et l'invariance affine, et nous
-ne revendiquons pas l'invariance au contraste.
+qui conserve cette invariance, une quantification par rang percentile, existe dans le code et
+nous l'avons mesurée en leave-one-out : elle perd $0{,}0018$ de Dice moyen, 2 sujets améliorés
+sur 10, $p = 0{,}322$ après Holm. Elle ne se distingue donc pas du bruit
+(\secref{sec:resultats}), et rien ne nous obligeait à trancher. Nous avons gardé la
+quantification linéaire, dont nous supposons, sans l'avoir vérifié, qu'elle sert les attributs
+d'altitude en préservant les amplitudes de contraste. Nous revendiquons l'auto-dualité et
+l'invariance affine ; nous ne revendiquons pas l'invariance au contraste.
 
 Chaque nœud de l'arbre porte six attributs sans dimension, du même genre que ceux des
 filtres par attribut [@breen1996attribute] : le logarithme de son aire
@@ -595,8 +593,8 @@ des effets nets apparaissent. En accent, les étapes que le protocole de la
 
 La \figref{fig:ablation} vaut moins pour ses barres que pour le contraste entre ses deux
 panneaux. Lues en valeurs absolues, les configurations sont indiscernables : sur dix sujets,
-l'écart-type inter-sujets vaut environ $0{,}011$ de Dice, soit trois fois le plus gros effet
-que nous mesurons. Un lecteur qui s'arrêterait au panneau (a) conclurait, à tort, qu'aucune
+l'écart-type inter-sujets vaut environ $0{,}010$ de Dice, du même ordre que le plus gros gain
+d'une seule étape et trois fois celui de la remontée de branche. Un lecteur qui s'arrêterait au panneau (a) conclurait, à tort, qu'aucune
 étape ne fait rien. Le panneau (b) montre pourquoi c'est faux : le même sujet passant dans
 toutes les configurations, la variabilité inter-sujets disparaît de la différence, et
 l'intervalle de $+0{,}0122$ pour l'auto-contexte exclut zéro très largement.
@@ -668,8 +666,8 @@ voisinage de quelques millimètres non plus.
 
 **Le résultat négatif sur l'auto-dualité.** Nous attendions de l'arbre des formes qu'il fasse
 mieux que la paire max-tree / min-tree, puisqu'il produit la même information dans une
-structure unique. Il divise effectivement par deux le nombre de colonnes à attributs
-identiques — 135 contre 187 — exactement comme la théorie le prédit. Mais le Dice ne bouge pas
+structure unique. Il divise effectivement par deux les colonnes du bloc morphologique, 52 contre 104, ce qui
+ramène le vecteur entier de 187 colonnes à 135 : exactement ce que la théorie prédit. Mais le Dice ne bouge pas
 de façon distinguable : $-0{,}0002$ contre le palier 0, quatre sujets améliorés sur dix,
 $p = 0{,}625$. Contre le palier 1, l'écart de $-0{,}0037$ ne franchit pas non plus notre seuil.
 
@@ -690,10 +688,9 @@ excluant les composantes ventriculaires. Nous ne l'avons pas fait faute de temps
 revendiquons donc rien sur ce point.
 
 Le cas du lissage est moins net. Il dégrade le Dice de $0{,}0031$, non distinguable du bruit,
-mais il donne la meilleure ASD de toutes les configurations. Autrement dit il rapproche les
-surfaces tout en dégradant le recouvrement volumique — ce qui est cohérent avec l'idée qu'il
-érode les structures fines, sulci et frontières corticales, déjà régularisées en amont par les
-blocs gaussien et contexte.
+mais il donne la meilleure ASD de toutes les configurations : il rapproche les surfaces tout en
+dégradant le recouvrement volumique. Notre hypothèse, que nous n'avons pas testée, est qu'il
+érode les structures les plus fines, sulci et frontières corticales.
 
 **Le compromis de la sélection de colonnes.** Passer à 40 colonnes coûte $-0{,}0240$ de Dice et
 divise le décompte par 2,8. Nous ne tranchons pas : c'est précisément ce qu'un front de Pareto
@@ -701,8 +698,11 @@ sert à ne pas trancher à la place du lecteur. Nous signalons seulement que le 
 inclut les 40 indices retenus, sans quoi la sélection paraîtrait deux fois plus rentable
 qu'elle ne l'est.
 
-**Limites.** Dix sujets annotés seulement : tout écart inférieur à $0{,}005$ de Dice est hors
-de portée de notre protocole.
+**Limites.** Dix sujets annotés, et une famille de quatorze comparaisons : après correction de
+Holm, une p-valeur brute de $0{,}064$ devient $0{,}322$, et l'écart de $-0{,}0037$ de
+l'auto-dualité reste indécidable alors que neuf sujets sur dix vont dans le même sens. Ce n'est
+pas la taille d'un écart qui nous limite — nous déclarons $-0{,}0011$ — c'est le nombre de
+sujets.
 Aucun jeu de test externe, aucune soumission au serveur du challenge, donc **aucun de nos
 chiffres n'est directement comparable aux scores publiés** — les pourcentages de la
 \secref{sec:resultats} se lisent en ordre de grandeur. Les hyperparamètres des blocs sont
@@ -714,9 +714,9 @@ revendiquer une propriété que nous n'avons plus.
 
 **Pistes.** Trois nous paraissent valoir le coup, dans cet ordre. Restreindre la contrainte
 topologique à la surface corticale, puisque l'échec est compris. Empiler un troisième étage
-d'auto-contexte, puisque le deuxième gagne autant que tous les blocs de descripteurs réunis.
-Et calculer l'arbre des formes conjointement sur T1 et T2 plutôt que modalité par modalité, ce
-qui rendrait au bloc morphologique le comportement croisé qui fait toute la valeur du bloc A.
+d'auto-contexte, puisque le deuxième gagne autant que les blocs de symétrie et de contexte
+réunis. Et calculer l'arbre des formes conjointement sur T1 et T2 plutôt que modalité par
+modalité, pour donner au bloc morphologique la lecture croisée dont le bloc A tire son gain.
 
 # Conclusion
 
@@ -725,9 +725,8 @@ régression logistique lisant des descripteurs géométriques et hiérarchiques 
 volée atteint un Dice moyen de $0{,}8399$ avec 939 paramètres appris, et de $0{,}8036$ avec
 163 — deux configurations de la même tranche, $10^2$. Rapporté à la méthode classée première du
 challenge iSeg-2017, qui est en $10^6$, cela représente environ **90 \% de son Dice quatre
-tranches d'ordre de grandeur plus bas** — un facteur 1 651 sur le décompte, soit 3,2 ordres au
-sens strict du rapport, et quatre tranches au sens du critère. La comparaison porte sur des sujets différents et
-se lit en ordre de grandeur ; nous ne la présentons pas autrement.
+tranches d'ordre de grandeur plus bas** — un facteur 1 651 sur le décompte. La comparaison porte sur des
+sujets différents et se lit en ordre de grandeur ; nous ne la présentons pas autrement.
 
 Ces chiffres ne disent pas que la frugalité vaut mieux. Ils disent qu'une part substantielle
 de ce que des millions de poids apprennent peut être remplacée par des descripteurs non
