@@ -129,17 +129,17 @@ d'entraînement ; il obtient un Dice moyen de $0{,}2139 \pm 0{,}0082$, un ratio 
 supérieur au meilleur ratio réel et 239 fois supérieur à celui de notre meilleure
 configuration. Un classement qui place ce modèle premier ne sélectionne rien.
 
-| rang | configuration | paramètres | tranche | Dice moyen | Dice / paramètres |
-|-----:|:------------------------------------------------|----------:|:-------:|-----------:|------------------:|
-| 1  | classifieur dégénéré : tissu majoritaire partout | 1         | $10^{0}$ | 0,2139     | $2{,}14 \cdot 10^{-1}$ |
-| 2  | sélection des 40 meilleures colonnes             | 163       | $10^{2}$ | 0,8036     | $4{,}93 \cdot 10^{-3}$ |
-| 3  | A+B+C, sans morphologie (référence)              | 252       | $10^{2}$ | 0,8055     | $3{,}20 \cdot 10^{-3}$ |
-| 4  | palier 0 : max-tree + min-tree                   | 324       | $10^{2}$ | 0,8156     | $2{,}52 \cdot 10^{-3}$ |
-| 5  | palier 2 : arbre des formes + remontée           | 408       | $10^{2}$ | 0,8154     | $2{,}00 \cdot 10^{-3}$ |
-| 9  | configuration finale : tous les blocs            | 456       | $10^{2}$ | 0,8276     | $1{,}81 \cdot 10^{-3}$ |
-| 12 | palier 1 : max-tree + min-tree + remontée        | 564       | $10^{2}$ | 0,8191     | $1{,}45 \cdot 10^{-3}$ |
-| 13 | finale + auto-contexte                           | 939       | $10^{2}$ | **0,8399** | $8{,}94 \cdot 10^{-4}$ |
-|    | MSL\_SKKU, 1\textsuperscript{re} du challenge    | 1 550 000 | $10^{6}$ | 0,9283     | $5{,}99 \cdot 10^{-7}$ |
+| rang | configuration | param. | tranche | Dice moyen | Dice / param. |
+|-----:|:-------------------------------------------|-----------:|:------:|----------:|------------:|
+| 1  | classifieur dégénéré : majoritaire | 1 | $10^{0}$ | 0,2139 | $2{,}14 \cdot 10^{-1}$ |
+| 2  | sélection des 40 meilleures colonnes | 163 | $10^{2}$ | 0,8036 | $4{,}93 \cdot 10^{-3}$ |
+| 3  | A+B+C, sans morphologie (référence) | 252 | $10^{2}$ | 0,8055 | $3{,}20 \cdot 10^{-3}$ |
+| 4  | palier 0 : max-tree + min-tree | 324 | $10^{2}$ | 0,8156 | $2{,}52 \cdot 10^{-3}$ |
+| 5  | palier 2 : arbre des formes + remontée | 408 | $10^{2}$ | 0,8154 | $2{,}00 \cdot 10^{-3}$ |
+| 9  | configuration finale : tous les blocs | 456 | $10^{2}$ | 0,8276 | $1{,}81 \cdot 10^{-3}$ |
+| 12 | palier 1 : les deux arbres + remontée | 564 | $10^{2}$ | 0,8191 | $1{,}45 \cdot 10^{-3}$ |
+| 13 | finale + auto-contexte | 939 | $10^{2}$ | **0,8399** | $8{,}94 \cdot 10^{-4}$ |
+|    | MSL\_SKKU, 1\textsuperscript{re} du challenge | $1{,}55 \cdot 10^{6}$ | $10^{6}$ | 0,9283 | $5{,}99 \cdot 10^{-7}$ |
 
 : Classement par ratio brut décroissant, extrait de `report/assets/ratio.md` où figurent les
 treize configurations. Le meilleur Dice est en gras et arrive dernier ; le meilleur ratio réel

@@ -100,10 +100,13 @@ def main() -> None:
     py = [float(np.mean(p[2])) for p in PUBLISHED]
     ax.scatter(px, py, s=42, marker="s", facecolor="none", edgecolor=NEUTRAL_EDGE, lw=1.0, zorder=3,
                label="challenge iSeg-2017 (13 sujets de test, serveur)")
-    # décalages alternés : les deux points sont proches en ordonnée, leurs étiquettes se
-    # chevaucheraient si elles étaient placées du même côté.
-    for (name, x, _), y, dy in zip(PUBLISHED, py, (13, -15)):
-        ax.annotate(name, (x, y), textcoords="offset points", xytext=(0, dy), ha="center",
+    # Les deux points sont proches en ordonnée et le second est contre le bord droit :
+    # l'un est étiqueté au-dessus, l'autre à sa gauche, sinon le texte passe sous le
+    # marqueur ou déborde du cadre.
+    PLACEMENT = {"MSL_SKKU": ((0, 12), "center"), "HyperDenseNet": ((0, -19), "center")}
+    for (name, x, _), y in zip(PUBLISHED, py):
+        offset, align = PLACEMENT[name]
+        ax.annotate(name, (x, y), textcoords="offset points", xytext=offset, ha=align,
                     fontsize=6.8, color=NEUTRAL_TEXT)
 
     if fin:
@@ -130,8 +133,10 @@ def main() -> None:
     # On n'étiquette donc que les points qui font l'argument — les deux extrémités du front et
     # la configuration de référence. Étiqueter les quatre paliers intermédiaires, tous groupés
     # entre 324 et 564 paramètres, rendrait l'encart illisible sans rien ajouter.
+    # « auto-contexte » etiquette le point le plus haut a droite : place en bas a gauche, le
+    # texte tombait sur le segment qui y monte. On le met au-dessus, d'ou la marge de ylim.
     placements = {"sélection K=40": (30, 9), "A+B+C": (24, -12),
-                  "finale": (-4, 10), "auto-contexte": (-32, -11)}
+                  "finale": (-4, 10), "auto-contexte": (-7, 6)}
     for x, y, lab in ours:
         if lab not in placements:
             continue
@@ -139,7 +144,7 @@ def main() -> None:
         inset.annotate(lab, (x, y), textcoords="offset points", xytext=placements[lab],
                        ha="center", fontsize=6.0, **style)
     inset.set_xlim(min(xs) * 0.80, max(xs) * 1.14)
-    inset.set_ylim(min(ys) - 0.0042, max(ys) + 0.0030)
+    inset.set_ylim(min(ys) - 0.0042, max(ys) + 0.0090)
     inset.tick_params(labelsize=5.8, length=2, pad=1.5)
     inset.set_xlabel("paramètres", fontsize=6.0, labelpad=1.0)
     inset.set_ylabel("Dice moyen", fontsize=6.0, labelpad=1.0)

@@ -48,3 +48,9 @@
 % --- interligne entre paragraphes : legerement resserre, 6pt -> 5pt ----------
 \AtBeginDocument{\setlength{\parskip}{5pt plus 2pt minus 1pt}}
 \AtBeginDocument{\setlength{\cslentryspacingunit}{3pt}}
+
+% --- veuves et orphelines : interdites. Six flottants sur quinze pages en produisent
+%     facilement, et une ligne seule en tete de page se voit tout de suite.
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
