@@ -39,3 +39,12 @@
 
 % --- nommage français des flottants -----------------------------------------
 \AtBeginDocument{\renewcommand{\tablename}{Tableau}}
+
+% --- flottants : un peu moins d'air, le rapport porte six figures -------------
+\setlength{\textfloatsep}{12pt plus 2pt minus 4pt}
+\setlength{\intextsep}{10pt plus 2pt minus 4pt}
+\captionsetup{skip=4pt}
+
+% --- interligne entre paragraphes : legerement resserre, 6pt -> 5pt ----------
+\AtBeginDocument{\setlength{\parskip}{5pt plus 2pt minus 1pt}}
+\AtBeginDocument{\setlength{\cslentryspacingunit}{3pt}}

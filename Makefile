@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 CLI := $(PY) -m src.cli
 
-.PHONY: venv test inspect blocks features grid report-assets cost figures report-facts report-figures pdf clean-cache
+.PHONY: venv test inspect blocks features grid report-assets cost figures report-facts report-figures check-numbers pdf clean-cache
 
 venv:
 	python3 -m venv .venv && .venv/bin/pip install -U pip && .venv/bin/pip install -r requirements.txt
@@ -65,6 +65,10 @@ PANDOC_FLAGS := --from=markdown+raw_tex+tex_math_dollars \
 
 REPORT_DEPS := report/rapport.md report/refs.bib report/preamble.tex \
                $(wildcard report/assets/*.pdf)
+
+# confronte chaque nombre du rapport a results/*.json et report/assets/
+check-numbers:
+	$(PY) scripts/check_numbers.py
 
 pdf: report/rapport.pdf
 

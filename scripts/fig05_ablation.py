@@ -181,15 +181,12 @@ def main() -> None:
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
 
-    fig.text(0.5, -0.04,
-             "En rouge, les étapes que le protocole de la section 4 déclare distinguables du bruit "
-             "(Wilcoxon apparié, corrigé de Holm sur la famille entière). "
-             "L'axe du panneau (a) est tronqué : les écarts valent quelques millièmes de Dice.\n"
-             "Les intervalles sont calculés sur n = 10 sujets par la loi de Student : ils décrivent la "
-             "précision de la moyenne et ne décident de rien.\nUn intervalle qui exclut zéro sans que "
-             "l'étape soit rouge signale une divergence entre l'intervalle et le test déclaré ; c'est le "
-             "test qui tranche.",
-             ha="center", va="top", fontsize=6.2, color=NEUTRAL_TEXT)
+    fig.text(0.5, -0.035,
+             "En accent, les étapes déclarées distinguables du bruit (§ 4). L'axe de (a) est "
+             "tronqué : les écarts valent quelques millièmes de Dice.\n"
+             "Les intervalles sont ceux de la moyenne sur n = 10, loi de Student ; en cas de "
+             "divergence avec le test déclaré, c'est le test qui tranche.",
+             ha="center", va="top", fontsize=7.0, color=NEUTRAL_TEXT, linespacing=1.5)
     fig.tight_layout()
     fig.savefig(OUT, format="pdf", bbox_inches="tight")
     print(f"{OUT}")
