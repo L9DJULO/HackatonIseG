@@ -61,8 +61,9 @@ sujets annotés, les distributions d'intensité des deux tissus se recouvrent à
 $0{,}701 \pm 0{,}048$ en T1 et à $0{,}867 \pm 0{,}041$ en T2, au sens du coefficient de
 recouvrement défini en \figref{fig:isointense}. L'estimateur est légèrement pessimiste, et
 nous l'avons mesuré : sur deux moitiés tirées au hasard des seuls voxels de substance
-grise, dont le recouvrement vrai vaut 1, il rend $0{,}991$. L'écart est donc réel. La
-conséquence est directe. Sur un problème à deux classes d'effectifs égaux, la meilleure
+grise, dont le recouvrement vrai vaut 1, il rend $0{,}991$. L'écart est donc réel.
+
+La conséquence est directe. Sur un problème à deux classes d'effectifs égaux, la meilleure
 règle de décision concevable fondée sur la seule intensité d'un voxel se trompe sur la
 moitié de l'aire de recouvrement : son exactitude plafonne à 65,0 % en T1 et à 56,6 % en
 T2. Même en lisant les deux modalités conjointement, le plafond monte seulement à 69,3 %.
@@ -311,7 +312,9 @@ l'intensité, gain et décalage d'acquisition, ces percentiles se transforment d
 façon, l'image quantifiée est identique et tout ce qui en découle l'est aussi : l'invariance
 affine est exacte. Sous une transformation croissante quelconque, une correction gamma par
 exemple, les classes de quantification ne coïncident plus avec les lignes de niveau, et les
-attributs qui lisent des altitudes — contraste, dynamique, résidu — changent. La variante
+attributs qui lisent des altitudes — contraste, dynamique, résidu — changent.
+
+La variante
 qui conserve cette invariance, une quantification par rang percentile, existe dans le code et
 nous l'avons mesurée en leave-one-out : elle perd $0{,}0018$ de Dice moyen, 2 sujets améliorés
 sur 10, $p = 0{,}322$ après Holm. Elle ne se distingue donc pas du bruit
@@ -458,51 +461,44 @@ centaines, tranche $10^2$. Un désaccord sur la frontière entre « paramètre a
 « opération » ferait donc basculer un classement fondé sur le ratio brut, et ne changerait
 rigoureusement rien à un classement fondé sur les ordres de grandeur. Dans les deux cas, quatre
 tranches séparent notre modèle du million et demi de paramètres de la méthode classée
-première.
-
-C'est la raison de fond pour laquelle nous ne demandons pas au lecteur d'adhérer à notre
-convention. À la granularité où l'argument se joue, elle n'a pas à être tranchée.
+première. Nous ne demandons donc à personne d'adhérer à notre frontière.
 
 # Protocole expérimental {#sec:protocole}
 
-**Leave-one-out.** Dix plis sur les dix sujets annotés. À chaque pli, neuf sujets entraînent,
-le dixième est segmenté entièrement. Graines fixées, celle de l'échantillonnage dérivée du
-numéro du sujet de test. Une commande reproduit n'importe quel résultat du rapport :
-`python -m src.cli run experiments/<config>.yaml`, qui écrit un JSON dans `results/`. Tous les
-chiffres viennent de ces JSON par `make report-assets`, aucun n'est recopié à la main.
+**Leave-one-out.** Dix plis sur les dix sujets annotés. Neuf sujets entraînent, le dixième est
+segmenté entièrement. Graines fixées, celle de l'échantillonnage dérivée du numéro du sujet de
+test. `python -m src.cli run experiments/<config>.yaml` reproduit n'importe quel résultat du
+rapport et écrit un JSON dans `results/`. Tous les chiffres en viennent par
+`make report-assets`. Aucun n'est recopié à la main.
 
-**Le contrôle anti-fuite.** C'est la propriété la plus critique du protocole, et elle est
-vérifiée mécaniquement plutôt que par relecture. Chaque bloc de descripteurs est calculé trois
-fois sur le même sujet : avec la vraie carte de labels, avec une carte permutée où les tissus
-ont changé d'étiquette, et sans aucune carte, comme sur les treize sujets de test. Le test
-exige que les trois sorties soient identiques bit à bit. Un bloc qui lirait la vérité terrain,
-même indirectement, échouerait immédiatement. Un second test vérifie qu'aucun bloc ne garde
-d'état d'un sujet à l'autre.
+**Le contrôle anti-fuite.** La propriété la plus critique du protocole, et la seule que nous
+ayons refusé de confier à une relecture. Chaque bloc est calculé trois fois sur le même sujet :
+avec la vraie carte de labels, avec une carte permutée, et sans aucune carte, comme sur les
+treize sujets de test. Le test exige les trois sorties identiques bit à bit. Un bloc qui lirait
+la vérité terrain, même indirectement, échoue. Un second test vérifie qu'aucun bloc ne garde
+d'état d'un sujet au suivant.
 
-**Métriques.** Les trois du challenge, toutes les trois rapportées : Dice, distance de surface
-moyenne (ASD), distance de Hausdorff modifiée (MHD, 95\textsuperscript{e} percentile des
-distances de surface symétriques). Calculées par classe et par sujet, jamais agrégées sur les
-voxels de plusieurs sujets. Le fond n'est jamais évalué. Le Dice mesure un recouvrement de
-volume, les distances une erreur de frontière. Une configuration peut gagner sur l'un et
-perdre sur l'autre, ce qui arrive dans nos résultats.
+**Métriques.** Les trois du challenge, toutes rapportées : Dice, distance de surface moyenne
+(ASD), distance de Hausdorff modifiée (MHD, 95\textsuperscript{e} percentile des distances de
+surface symétriques). Par classe et par sujet, jamais agrégées sur les voxels de plusieurs
+sujets. Le fond n'est jamais évalué. Le Dice mesure un volume, les distances une frontière, et
+une configuration peut gagner sur l'un en perdant sur l'autre. C'est le cas du lissage.
 
-**Protocole statistique.** Dix sujets, c'est peu, et un écart de quelques millièmes de Dice
-peut n'être que du bruit. Le même sujet passant dans toutes les configurations, toutes les
-comparaisons sont appariées. Chacune rapporte le delta moyen et son écart-type inter-sujets,
-le test des rangs signés de Wilcoxon bilatéral, la taille d'effet — $d$ de Cohen apparié et
-$\delta$ de Cliff, non paramétrique — et le nombre de sujets améliorés sur dix. Ce dernier
-mérite sa justification : à $n = 10$ l'amplitude d'un gain est bruitée, mais sa systématicité
-ne l'est pas, et un gain porté par un seul sujet n'est pas un gain. Un effet est déclaré
-distinguable du bruit si la p-valeur ajustée est inférieure à 0,05 **et** si au moins huit
-sujets sur dix vont dans le même sens ; le critère est symétrique, une dégradation
-systématique reste un résultat.
+**Statistiques.** Dix sujets, c'est peu. Le même sujet passant dans toutes les configurations,
+toutes les comparaisons sont appariées. Chacune rapporte le delta moyen, son écart-type
+inter-sujets, le test des rangs signés de Wilcoxon bilatéral, deux tailles d'effet — $d$ de
+Cohen apparié et $\delta$ de Cliff — et le nombre de sujets améliorés sur dix. Ce dernier
+mérite sa justification : à $n = 10$ l'amplitude d'un gain est bruitée, sa systématicité ne
+l'est pas. Un effet est déclaré distinguable du bruit si la p-valeur ajustée descend sous 0,05
+**et** si au moins huit sujets sur dix vont dans le même sens. Le critère est symétrique : une
+dégradation systématique reste un résultat.
 
-Les quatorze comparaisons forment une liste fixe, écrite dans `scripts/report_assets.py` et
-non choisie après lecture des p-valeurs. La correction de multiplicité de Holm porte sur la
-famille entière : corriger sur un sous-ensemble serait plus permissif. Le verdict est rendu
-sur la p-valeur ajustée. Avec $n = 10$ la plus petite p-valeur atteignable vaut 0,002, soit
-0,027 sur une famille de quatorze ; tous les gains que nous revendiquons la franchissent, et
-la correction ne nous coûte aucun résultat.
+Les quatorze comparaisons forment une liste fixe, écrite dans `scripts/report_assets.py` avant
+lecture des p-valeurs. Holm porte sur la famille entière ; corriger sur un sous-ensemble serait
+plus permissif. À $n = 10$ la plus petite p-valeur atteignable vaut 0,002, soit 0,027 après
+correction, et tous les gains que nous revendiquons la franchissent. Elle nous coûte un
+résultat, un seul : la dégradation à 64 niveaux, distinguable avant correction, ne l'est plus
+après (\secref{sec:resultats}).
 
 # Résultats {#sec:resultats}
 
@@ -511,22 +507,22 @@ Toutes les valeurs de cette section viennent de `report/assets/`, régénéré d
 
 ## Ablation
 
-Le \tabref{tab:ablation} donne les douze configurations. Trois lectures s'en dégagent.
+Le \tabref{tab:ablation} donne les douze configurations. Trois choses s'y lisent.
 
-D'abord, **le contexte non local paye et la description locale plafonne**. Passer de A+B+C au
-bloc morphologique gagne $+0{,}0102$ de Dice sur dix sujets sur dix ; la remontée de branche
-en ajoute $+0{,}0035$, également sur dix sujets sur dix. Les deux survivent à la correction de
-Holm. À l'inverse, les raffinements purement locaux — filtres de grain, quantification par
-rang — ne produisent aucun effet distinguable. C'est exactement ce que la phase isointense
-laissait attendre : ce qui manque au voxel n'est pas dans son voisinage immédiat.
+**Le contexte non local paye, la description locale plafonne.** Passer de A+B+C au bloc
+morphologique gagne $+0{,}0102$ de Dice, dix sujets sur dix ; la remontée de branche en ajoute
+$+0{,}0035$, dix sujets sur dix également. Les deux survivent à Holm. Les raffinements
+purement locaux, filtres de grain et quantification par rang, ne produisent rien de
+distinguable. C'est ce que la phase isointense laissait attendre : ce qui manque au voxel
+n'est pas dans son voisinage.
 
-Ensuite, **l'auto-contexte prolonge le même mouvement**, et c'est cohérent : il ajoute du
-contexte non local, non plus sur les intensités mais sur les décisions. Il porte le Dice à
-$0{,}8399$, gagne sur les dix sujets, et améliore les trois métriques à la fois — seul point
-du tableau à obtenir simultanément le meilleur Dice, le meilleur ASD et le meilleur MHD.
+**L'auto-contexte prolonge le même mouvement**, sur le même principe : du contexte non local,
+porté cette fois par les décisions plutôt que par les intensités. Il monte le Dice à
+$0{,}8399$ et gagne sur les dix sujets. C'est le seul point du tableau à obtenir en même temps
+le meilleur Dice, le meilleur ASD et le meilleur MHD.
 
-Enfin, **deux mécanismes échouent, et nous les gardons dans le tableau**. Le post-traitement
-dégrade ; l'arbre des formes n'apporte rien contre la paire max-tree / min-tree. La
+**Deux mécanismes échouent, et nous les gardons dans le tableau.** Le post-traitement dégrade.
+L'arbre des formes n'apporte rien contre la paire max-tree / min-tree. La
 \secref{sec:discussion} y revient.
 
 | configuration | param. | LCR | SG | SB | Dice moyen |
