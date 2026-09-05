@@ -9,10 +9,11 @@ côté de ceux du challenge. Elle doit donc être irréprochable sur deux points
    nombre de paramètres : une estimation d'ordre de grandeur a sa place dans le texte, pas
    dans un nuage de points où elle se lirait comme une mesure.
 
-2. LA NON-COMPARABILITÉ EST ÉCRITE SUR LA FIGURE. Nos Dice sont un leave-one-out sur les 10
-   sujets annotés ; les leurs viennent du serveur du challenge sur les 13 sujets de test, dont
-   la vérité terrain n'est pas publique. Les deux nuages ne sont pas sur la même échelle
-   d'évaluation, et la figure le dit au lieu de laisser le lecteur le supposer.
+2. DEUX RÉGIMES D'ÉVALUATION, DISTINGUÉS PAR LE SYMBOLE. Le front en trait plein est un
+   leave-one-out sur les 10 sujets annotés : il sert à comparer nos configurations ENTRE ELLES,
+   pas au challenge. Le point plein isolé est le score OFFICIEL que le serveur du challenge a
+   rendu pour notre soumission, sur les mêmes 13 sujets de test que les références publiées :
+   celui-là, et lui seul, se compare directement à elles.
 
 Usage : python scripts/fig04_pareto.py
 """
@@ -55,6 +56,11 @@ PUBLISHED = [
     ("HyperDenseNet", 10_349_450, (0.956, 0.920, 0.901)),
 ]
 
+OFFICIEL = ROOT / "results" / "official_test.json"
+"""Notre score officiel, rendu par le serveur du challenge sur les 13 sujets de test. Produit
+par la même configuration que le point « auto-contexte » du front, mais entraînée sur les dix
+sujets annotés au lieu de neuf : c'est pourquoi les deux points ne se superposent pas."""
+
 
 def load(name: str) -> dict | None:
     p = RESULTS / f"{name}.json"
@@ -96,24 +102,34 @@ def main() -> None:
         ax.annotate("classifieur dégénéré\n(1 paramètre)", (deg["n_params"], deg["dice_mean"]),
                     textcoords="offset points", xytext=(6, 4), fontsize=6.8, color=NEUTRAL_TEXT)
 
+    # notre point OFFICIEL : même évaluation que les références publiées
+    officiel = json.loads(OFFICIEL.read_text()) if OFFICIEL.exists() else None
+    if officiel:
+        ox, oy = officiel["n_params"], officiel["mean"]["dice_mean"]
+        ax.scatter([ox], [oy], s=64, marker="D", facecolor=ACCENT, edgecolor="white", lw=0.8, zorder=6,
+                   label="nous, score officiel du serveur (13 sujets de test)")
+        ax.annotate(f"notre soumission\n{oy:.4f}", (ox, oy), textcoords="offset points",
+                    xytext=(14, -20), ha="left", fontsize=6.8, color=ACCENT, fontweight="bold")
+
     px = [p[1] for p in PUBLISHED]
     py = [float(np.mean(p[2])) for p in PUBLISHED]
     ax.scatter(px, py, s=42, marker="s", facecolor="none", edgecolor=NEUTRAL_EDGE, lw=1.0, zorder=3,
-               label="challenge iSeg-2017 (13 sujets de test, serveur)")
+               label="challenge iSeg-2017, méthodes publiées (mêmes 13 sujets)")
     # décalages alternés : les deux points sont proches en ordonnée, leurs étiquettes se
     # chevaucheraient si elles étaient placées du même côté.
     for (name, x, _), y, dy in zip(PUBLISHED, py, (13, -15)):
         ax.annotate(name, (x, y), textcoords="offset points", xytext=(0, dy), ha="center",
                     fontsize=6.8, color=NEUTRAL_TEXT)
 
-    if fin:
+    ancre = (officiel["n_params"], officiel["mean"]["dice_mean"]) if officiel else (fin[0], fin[1]) if fin else None
+    if ancre:
         ax.annotate(
-            "", xy=(PUBLISHED[0][1], py[0]), xytext=(fin[0], fin[1]),
+            "", xy=(PUBLISHED[0][1], py[0]), xytext=ancre,
             arrowprops=dict(arrowstyle="-", ls=":", lw=0.7, color=NEUTRAL_EDGE, shrinkA=6, shrinkB=8),
         )
-        ratio = PUBLISHED[0][1] / fin[0]
-        ax.text(np.sqrt(fin[0] * PUBLISHED[0][1]), (fin[1] + py[0]) / 2 + 0.030,
-                f"×{ratio:,.0f} de paramètres\npour {py[0] - fin[1]:+.3f} de Dice".replace(",", " "),
+        ratio = PUBLISHED[0][1] / ancre[0]
+        ax.text(np.sqrt(ancre[0] * PUBLISHED[0][1]) * 0.62, (ancre[1] + py[0]) / 2 + 0.055,
+                f"$10^2$ contre $10^6$ paramètres\npour {ancre[1] / py[0]:.0%} de son Dice",
                 fontsize=6.8, ha="center", color=NEUTRAL_TEXT)
 
     # --- encart : nos configurations sont toutes entre 250 et 570 paramètres, donc
@@ -160,17 +176,17 @@ def main() -> None:
     ax.legend(loc="upper center", frameon=False, fontsize=6.8, ncol=2,
               bbox_to_anchor=(0.5, -0.16), columnspacing=1.6)
     fig.text(0.5, -0.13,
-             "Les deux nuages ne sont pas évalués sur les mêmes sujets : nos valeurs sont un "
-             "leave-one-out sur les 10 sujets annotés,\ncelles du challenge viennent du serveur "
-             "des organisateurs sur les 13 sujets de test. Ils se lisent en ordre de grandeur, "
-             "pas en écart exact.",
+             "Le losange et les carrés sont évalués sur les MÊMES 13 sujets de test par le serveur "
+             "des organisateurs : ils se comparent directement.\nLe front en trait plein est un "
+             "leave-one-out sur les 10 sujets annotés — il sert à comparer nos configurations "
+             "entre elles, pas au challenge.",
              ha="center", va="top", fontsize=6.2, color=NEUTRAL_TEXT)
     fig.savefig(OUT, format="pdf", bbox_inches="tight")
     print(f"{OUT}")
-    if fin:
-        print(f"  finale : {fin[0]} paramètres, Dice {fin[1]:.4f}")
+    if officiel:
+        print(f"  soumission officielle : {ox} paramètres, Dice {oy:.4f} sur 13 sujets de test")
         print(f"  MSL_SKKU : {PUBLISHED[0][1]} paramètres, Dice {py[0]:.4f} "
-              f"-> ×{PUBLISHED[0][1] / fin[0]:.0f} de paramètres, {fin[1] / py[0]:.1%} du Dice")
+              f"-> ×{PUBLISHED[0][1] / ox:.0f} de paramètres, {oy / py[0]:.1%} de son Dice")
 
 
 if __name__ == "__main__":

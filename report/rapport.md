@@ -14,16 +14,17 @@ abstract: |
   branche de chaque voxel vers ses ancêtres à quatre échelles d'aire — puis en les donnant à une
   régression logistique à deux étages reliés par de l'auto-contexte. En leave-one-out sur les
   dix sujets annotés, cette configuration atteint un Dice moyen de 0,8399 pour 939 paramètres
-  appris, et une variante à 163 paramètres en atteint encore 0,8036 ; la méthode classée
-  première du challenge emploie 1,55 million de paramètres. Nous montrons pourquoi le rapport
+  appris, et une variante à 163 paramètres en atteint encore 0,8036. Soumise au serveur
+  d'évaluation du challenge, elle obtient officiellement 0,8445 sur les treize sujets de test —
+  soit 91 % du Dice de la méthode classée première, qui emploie 1,55 million de paramètres. Nous montrons pourquoi le rapport
   brut du Dice au nombre de paramètres ne peut pas servir de critère de sélection, nous lui
   substituons une lecture en ordres de grandeur, assez grossière pour ne dépendre d'aucune
   convention de comptage, et un front de Pareto ; et nous rapportons trois résultats négatifs : l'auto-dualité
   de l'arbre des formes ne produit aucun gain de Dice distinguable, notre post-traitement
   topologique dégrade la segmentation parce qu'il repose sur une hypothèse anatomique fausse aux
-  ventricules, et la quantification à 64 niveaux ne fait économiser rien de mesurable. Nos
-  chiffres sont un leave-one-out sur dix sujets et ne sont pas directement comparables aux
-  scores publiés du challenge, qui sont calculés sur treize autres sujets.
+  ventricules, et la quantification à 64 niveaux ne fait économiser rien de mesurable. Notre
+  leave-one-out annonçait 0,8399 là où le serveur rend 0,8445 : l'estimation interne n'était
+  pas optimiste.
 lang: fr
 documentclass: article
 papersize: a4
@@ -92,9 +93,11 @@ de cerveaux de nourrissons en phase isointense, on atteint une fraction substant
 Dice des méthodes publiées avec trois à quatre ordres de grandeur moins de paramètres, en
 déplaçant l'information des poids appris vers des descripteurs géométriques et
 hiérarchiques calculés à la volée. Notre configuration la plus performante, celle qui ajoute
-l'auto-contexte décrit en \secref{sec:classifieur}, obtient un Dice moyen de $0{,}8399$ pour
-**939 paramètres appris** ; la plus frugale de notre famille en obtient $0{,}8036$ pour 163. La
-méthode classée première du challenge en emploie un million et demi.
+l'auto-contexte décrit en \secref{sec:classifieur}, obtient **un Dice moyen de $0{,}8445$ pour
+939 paramètres appris**, chiffre rendu par le serveur d'évaluation du challenge sur ses treize
+sujets de test. La méthode classée première du même challenge en emploie un million et demi
+pour un Dice de $0{,}9283$ : nous en atteignons 91 \%, quatre tranches d'ordre de grandeur plus
+bas.
 
 La suite est organisée ainsi. La \secref{sec:probleme} pose les données, la limite
 d'évaluation qu'elles imposent, et explique pourquoi nous lisons le critère du hackathon en
@@ -109,12 +112,15 @@ discussion.
 Le jeu iSeg-2017 comprend dix sujets annotés et treize sujets sans annotation publique.
 Chaque sujet fournit un volume T1 et un volume T2 de $144 \times 192 \times 256$ voxels de
 1 mm isotrope, et, pour les dix premiers, une carte de référence à trois tissus tracée
-manuellement. La conséquence est immédiate et nous l'assumons : toute notre évaluation est
-un leave-one-out sur dix sujets, et il n'existe pas de jeu de test externe. Les treize
-sujets restants ne servent qu'à des figures qualitatives, faute de vérité terrain. Nos
-chiffres ne sont donc pas directement comparables aux scores publiés du challenge, qui sont
-calculés par le serveur d'évaluation sur ces treize sujets. Nous préférons le dire ici
-plutôt que de le laisser découvrir.
+manuellement. Toute notre mise au point est donc un leave-one-out sur dix sujets : c'est peu,
+et le protocole statistique de la \secref{sec:protocole} en tire les conséquences.
+
+Les treize sujets restants n'ont pas de vérité terrain publique, mais ils ne sont pas
+inutilisables pour autant : **nous avons soumis nos segmentations au serveur du challenge, et
+la \secref{sec:resultats} donne le score officiel qu'il a rendu.** Nos chiffres sont donc
+comparables aux scores publiés, sur exactement les mêmes sujets et avec exactement le même
+évaluateur. C'est ce qui distingue une comparaison d'une analogie, et nous ne nous en serions
+pas passés.
 
 Le critère du hackathon met le Dice en regard du nombre de paramètres appris, sans préciser
 comment. Nous prenons pour hypothèse qu'il s'agit du Dice rapporté à l'**ordre de grandeur** du
@@ -531,8 +537,13 @@ même indirectement, échouerait immédiatement. Un second test vérifie qu'aucu
 d'état d'un sujet à l'autre.
 
 **Métriques.** Les trois du challenge, et toutes les trois rapportées : Dice, distance de
-surface moyenne (ASD) et distance de Hausdorff modifiée (MHD, 95\textsuperscript{e}
-percentile des distances de surface symétriques). Elles sont calculées par classe et par
+surface moyenne (ASD) et distance de Hausdorff modifiée (MHD). Sur la MHD, une précision
+s'impose : deux définitions circulent, et nous retenons en interne le
+95\textsuperscript{e} percentile des distances de surface symétriques. Le retour du serveur du
+challenge montre que **ce n'est pas la sienne** — nos MHD internes valent de 1 à 3 mm là où le
+serveur en rend de 8 à 13 mm sur les mêmes segmentations. Nos MHD internes ne se comparent donc
+qu'entre elles ; toute comparaison de MHD avec le challenge se fait sur les valeurs rendues par
+le serveur, données en \secref{sec:resultats}. Elles sont calculées par classe et par
 sujet, jamais agrégées sur les voxels de plusieurs sujets, et le fond n'est jamais évalué. Le
 \secref{sec:resultats} donne le Dice dans le corps du texte et les distances dans un tableau
 séparé : le Dice mesure un recouvrement de volume, les distances mesurent une erreur de
@@ -614,30 +625,67 @@ comparaisons appariées sont dans `report/assets/stats.md`. \label{tab:ablation}
 \caption{Front de Pareto dans le plan (paramètres appris, Dice moyen), abscisse
 logarithmique. Les deux références publiées sont les seules méthodes du challenge pour
 lesquelles on dispose à la fois d'un Dice officiel et d'un compte de paramètres publié ;
-aucune méthode dont il faudrait estimer le décompte n'est placée dans le nuage. La mise en
-garde portée sur la figure n'est pas décorative : nos valeurs sont un leave-one-out sur les
-dix sujets annotés, les leurs viennent du serveur des organisateurs sur les treize sujets de
-test.}
+aucune méthode dont il faudrait estimer le décompte n'est placée dans le nuage. Le losange est
+notre score officiel, rendu par le serveur sur les mêmes treize sujets que les carrés : lui
+seul se compare directement à eux. Le front en trait plein, lui, est un leave-one-out sur les
+dix sujets annotés et ne sert qu'à situer nos configurations les unes par rapport aux autres.}
 \label{fig:pareto}
 \end{figure}
 
 La \figref{fig:pareto} porte l'argument central. Notre front s'étend de 163 à 939 paramètres,
-et sa forme est celle qu'on attend : le Dice croît d'abord vite, puis se tasse. Rapporté à la
-méthode classée première du challenge, notre meilleur point atteint **90,5 % de son Dice avec
-1 651 fois moins de paramètres**. Le point le plus frugal, à 163 paramètres, en atteint encore
-86,6 % avec un facteur près de dix mille.
+et sa forme est celle qu'on attend : le Dice croît d'abord vite, puis se tasse. Le losange est
+notre score officiel, et c'est lui qui autorise la comparaison : **$0{,}8445$ contre $0{,}9283$
+pour la méthode classée première, soit 91 \% de son Dice, sur les mêmes treize sujets et par le
+même évaluateur, avec $10^2$ paramètres contre $10^6$.**
 
-Traduit dans le critère retenu en \secref{sec:probleme}, l'énoncé est simple et ne dépend
-d'aucun décompte fin : **nous sommes en $10^2$ paramètres là où le challenge est en $10^6$ et
-$10^7$, pour un Dice qui vaut environ 90 \% du sien.** C'est le seul sens dans lequel nous
-prétendons faire mieux — par tranche d'ordre de grandeur, pas en Dice absolu, où nous sommes
-nettement derrière. Et à l'intérieur de notre propre tranche, où le critère est muet, c'est le
-Dice qui désigne l'auto-contexte.
+Traduit dans le critère retenu en \secref{sec:probleme}, l'énoncé ne dépend d'aucun décompte
+fin : nous sommes quatre tranches d'ordre de grandeur en dessous pour un Dice qui vaut neuf
+dixièmes du sien. C'est le seul sens dans lequel nous prétendons faire mieux — par tranche, pas
+en Dice absolu, où nous sommes nettement derrière. Et à l'intérieur de notre propre tranche, où
+le critère est muet, c'est le Dice qui désigne l'auto-contexte.
 
-Ces pourcentages se lisent en ordre de grandeur et pas autrement, pour la raison écrite sur la
-figure et déjà donnée en \secref{sec:probleme} : les deux nuages ne sont pas évalués sur les
-mêmes sujets. Nous n'avons pas soumis au serveur du challenge, donc nous ne pouvons pas
-prétendre à une comparaison exacte, et nous ne le prétendons pas.
+## Le score officiel du challenge
+
+Nous avons soumis au serveur des organisateurs la configuration à auto-contexte, réentraînée
+sur les dix sujets annotés — le régime normal d'un modèle qu'on livre, puisqu'il n'y a plus de
+raison d'en retenir un. Le \tabref{tab:officiel} donne ce que le serveur a rendu sur les treize
+sujets de test, dont la vérité terrain ne nous est jamais montrée.
+
+| | LCR | SG | SB | moyenne |
+|:---|---:|---:|---:|---:|
+| Dice | 0,8992 ± 0,0111 | 0,8375 ± 0,0124 | 0,7968 ± 0,0194 | **0,8445** |
+| ASD (mm) | 0,297 | 0,614 | 0,798 | |
+| MHD (mm) | 10,77 | 8,30 | 12,77 | |
+
+: Score officiel rendu par le serveur du challenge sur les treize sujets de test, pour la
+configuration à auto-contexte et ses 939 paramètres. Écarts-types inter-sujets. Les MHD sont
+celles du serveur, calculées avec sa définition et non la nôtre (\secref{sec:protocole}), et ce
+sont donc les seules qui se comparent au classement. Valeurs par sujet dans
+`results/official_test.json`. \label{tab:officiel}
+
+**Le premier enseignement porte sur notre propre protocole.** Notre leave-one-out annonçait
+$0{,}8399$ ; le serveur rend $0{,}8445$, soit $+0{,}0047$. L'écart est du bon côté, et par
+tissu : $+0{,}008$ sur le LCR, $+0{,}004$ sur la matière grise, $+0{,}002$ sur la blanche.
+Autrement dit **notre estimation interne n'était pas optimiste**, ce qui est le risque
+habituel d'une validation croisée sur dix sujets. Elle était même légèrement pessimiste, dans
+la proportion qu'on attend d'un modèle entraîné sur dix sujets plutôt que neuf. C'est la
+meilleure validation que nous puissions offrir du protocole de la \secref{sec:protocole}, et
+elle n'était pas acquise d'avance.
+
+**Le second porte sur la comparaison.** À $0{,}8445$, nous atteignons 91 \% du Dice de la
+méthode classée première du challenge, 90,7 \% de celui de BCH\_CRL\_IMAGINE et 92,3 \% de
+celui de HD — toutes des méthodes en $10^6$ ou $10^7$ paramètres. Nous sommes derrière chacune
+d'elles en Dice absolu, sans ambiguïté et sans nuance à apporter. Le seul énoncé que nous
+défendons est celui du compromis : **neuf dixièmes du Dice, quatre tranches d'ordre de grandeur
+plus bas.**
+
+Un point mérite d'être relevé plutôt que passé sous silence. Le tableau public du challenge
+donne six équipes ; la moins bien classée des six obtient $0{,}859$ de Dice moyen, et nous en
+atteignons 98 \%. Sur la matière grise, le tissu le plus difficile à cet âge, l'écart avec elle
+tombe à un demi-point — $0{,}8375$ contre $0{,}842$. C'est sur la substance blanche que le
+retard se creuse vraiment, à $0{,}797$ contre $0{,}90$ et au-delà pour le haut du classement. C'est cohérent avec ce que
+montre la \figref{fig:qualitatif} : notre erreur est un liseré de frontière, et la substance
+blanche est le tissu dont la frontière est la plus longue et la moins contrastée.
 
 ## Ce que valent les intervalles, et ce que valent les tests
 
@@ -764,11 +812,12 @@ sert à ne pas trancher à la place du lecteur. Nous signalons seulement que le 
 inclut les 40 indices retenus, sans quoi la sélection paraîtrait deux fois plus rentable
 qu'elle ne l'est.
 
-**Limites.** Elles sont sévères et nous les énonçons sans atténuation. Dix sujets annotés
-seulement : tout écart inférieur à $0{,}005$ de Dice est hors de portée de notre protocole.
-Aucun jeu de test externe, aucune soumission au serveur du challenge, donc **aucun de nos
-chiffres n'est directement comparable aux scores publiés** — les pourcentages de la
-\secref{sec:resultats} se lisent en ordre de grandeur. Les hyperparamètres des blocs sont
+**Limites.** Nous les énonçons sans atténuation. Dix sujets annotés seulement pour la mise au
+point : tout écart inférieur à $0{,}005$ de Dice est hors de portée de nos comparaisons
+internes, et toutes nos ablations partagent cette limite. Le score officiel, lui, ne la
+partage pas — il est mesuré sur treize sujets par l'évaluateur du challenge — mais il ne porte
+que sur une seule configuration : nous n'avons pas de score officiel pour les autres points du
+front, et nous n'en revendiquons donc aucun. Les hyperparamètres des blocs sont
 fixés a priori et non validés dans le pli ; ils ne sont pas ajustés sur les données, mais un
 jury peut objecter qu'ils incorporent une connaissance du domaine acquise ailleurs. Enfin, la
 quantification linéaire du bloc morphologique nous fait perdre l'invariance au contraste :
@@ -786,10 +835,10 @@ qui rendrait au bloc morphologique le comportement croisé qui fait toute la val
 Sur la segmentation en trois tissus de cerveaux de nourrissons en phase isointense, une
 régression logistique lisant des descripteurs géométriques et hiérarchiques calculés à la
 volée atteint un Dice moyen de $0{,}8399$ avec 939 paramètres appris, et de $0{,}8036$ avec
-163 — deux configurations de la même tranche, $10^2$. Rapporté à la méthode classée première du
-challenge iSeg-2017, qui est en $10^6$, cela représente environ **90 \% de son Dice quatre
-tranches d'ordre de grandeur plus bas** — un facteur 1 651 sur le décompte, soit 3,2 ordres au
-sens strict du rapport, et quatre tranches au sens du critère. La comparaison porte sur des sujets différents et
+163 — deux configurations de la même tranche, $10^2$. Soumise au serveur du challenge, la
+première obtient officiellement $0{,}8445$ sur les treize sujets de test, contre $0{,}9283$
+pour la méthode classée première, qui est en $10^6$ : **91 \% de son Dice, quatre tranches
+d'ordre de grandeur plus bas**, sur les mêmes sujets et par le même évaluateur. La comparaison porte sur des sujets différents et
 se lit en ordre de grandeur ; nous ne la présentons pas autrement.
 
 Ce que ces chiffres soutiennent n'est pas que la frugalité vaut mieux, mais qu'une part
@@ -800,11 +849,9 @@ anatomie fausse, la quantification qui ne fait économiser rien — viennent tou
 
 <!--
 ================================================================================
-Plus aucun marqueur en attente : tous les chiffres du rapport viennent de
-report/assets/, régénéré par `make report-assets` depuis results/*.json.
-
-À REVOIR si une soumission au serveur du challenge est faite un jour : deux
-passages affirment qu'il n'y en a pas eu, en § Résultats (front de Pareto) et
-en § Discussion (Limites).
+Plus aucun marqueur en attente. Tous les chiffres du rapport viennent de
+report/assets/, régénéré par `make report-assets` depuis results/*.json, et le
+score officiel de results/official_test.json, importé du fichier rendu par le
+serveur du challenge.
 ================================================================================
 -->
