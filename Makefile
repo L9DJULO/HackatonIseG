@@ -45,6 +45,7 @@ report-figures:
 	$(PY) scripts/fig01_isointense.py
 	$(PY) scripts/fig02_pipeline.py
 	$(PY) scripts/fig03_shapes.py
+	$(PY) scripts/fig06_qualitative.py
 
 # figures 4 et 5 : construites uniquement depuis results/*.json, aucune donnee requise
 report-figures-results:

@@ -6,7 +6,23 @@ author:
   - "Arthur Goullet de Rugy"
 date: "septembre 2026"
 abstract: |
-  [[RÉSUMÉ : à rédiger en dernier, une fois les chiffres finaux disponibles.]]
+  À six mois, la myélinisation est à mi-course et substance grise et substance blanche ont
+  presque la même intensité : aucune méthode fondée sur la valeur d'un point ne peut
+  fonctionner. Nous segmentons les trois tissus des IRM T1 et T2 du challenge MICCAI iSeg-2017
+  en déplaçant l'information des poids appris vers des descripteurs non appris et non locaux —
+  au premier rang desquels un arbre des formes tridimensionnel auto-dual, dont on remonte la
+  branche de chaque voxel vers ses ancêtres à quatre échelles d'aire — puis en les donnant à une
+  régression logistique à deux étages reliés par de l'auto-contexte. En leave-one-out sur les
+  dix sujets annotés, cette configuration atteint un Dice moyen de 0,8399 pour 939 paramètres
+  appris, et une variante à 163 paramètres en atteint encore 0,8036 ; la méthode classée
+  première du challenge emploie 1,55 million de paramètres. Nous montrons pourquoi le rapport
+  brut du Dice au nombre de paramètres ne peut pas servir de critère de sélection, nous lui
+  substituons un front de Pareto, et nous rapportons trois résultats négatifs : l'auto-dualité
+  de l'arbre des formes ne produit aucun gain de Dice distinguable, notre post-traitement
+  topologique dégrade la segmentation parce qu'il repose sur une hypothèse anatomique fausse aux
+  ventricules, et la quantification à 64 niveaux ne fait économiser rien de mesurable. Nos
+  chiffres sont un leave-one-out sur dix sujets et ne sont pas directement comparables aux
+  scores publiés du challenge, qui sont calculés sur treize autres sujets.
 lang: fr
 documentclass: article
 papersize: a4
@@ -74,8 +90,10 @@ rapport défend une seule affirmation, et chaque section y contribue : sur la se
 de cerveaux de nourrissons en phase isointense, on atteint une fraction substantielle du
 Dice des méthodes publiées avec trois à quatre ordres de grandeur moins de paramètres, en
 déplaçant l'information des poids appris vers des descripteurs géométriques et
-hiérarchiques calculés à la volée. Notre configuration finale obtient un Dice moyen de
-[[CHIFFRE:dice_final]] pour [[CHIFFRE:parametres_final]] paramètres appris.
+hiérarchiques calculés à la volée. Notre configuration la plus performante, celle qui ajoute
+l'auto-contexte décrit en \secref{sec:classifieur}, obtient un Dice moyen de $0{,}8399$ pour
+**939 paramètres appris** ; la plus frugale de notre famille en obtient $0{,}8036$ pour 163. La
+méthode classée première du challenge en emploie un million et demi.
 
 La suite est organisée ainsi. La \secref{sec:probleme} pose les données, la limite
 d'évaluation qu'elles imposent, et explique pourquoi le ratio brut du Dice sur le nombre de
@@ -623,6 +641,38 @@ systématique — neuf sujets sur dix, $p = 0{,}049$ après Holm. Une option qui
 rapporte rien de mesurable n'est pas un levier de frugalité : c'est une option à ne pas
 prendre, et nous ne la prenons pas.
 
+## Le meilleur et le pire sujet
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{report/assets/fig06_qualitative.pdf}
+\caption{Sujet le mieux et le moins bien segmentés du leave-one-out, avec leur carte d'erreur.
+La coupe est choisie par la même règle pour les deux — celle qui contient le plus de voxels du
+masque — de façon qu'aucun des deux ne soit montré sous un jour choisi. La carte d'erreur est
+colorée par le tissu de la vérité terrain, donc par ce que la prédiction a manqué.}
+\label{fig:qualitatif}
+\end{figure}
+
+La \figref{fig:qualitatif} montre les deux extrêmes. Le sujet 8 obtient $0{,}8506$, le sujet 2
+$0{,}8215$ : l'écart entre le meilleur et le pire vaut $0{,}029$ de Dice, soit plus du double du
+gain qu'apporte l'auto-contexte. **La variabilité entre sujets domine donc largement la
+différence entre nos configurations**, ce qui est la justification empirique de tout le
+protocole apparié de la \secref{sec:protocole}.
+
+Le pire cas mérite d'être regardé plutôt qu'écarté. Sur le sujet 2, l'erreur ne se concentre pas
+dans une région particulière : elle est distribuée le long de toute l'interface entre substance
+grise et substance blanche, en un liseré d'un à deux voxels. Ce n'est pas un échec de
+localisation, c'est un flou de frontière — exactement ce que la phase isointense prédit, et
+exactement ce que le Dice pénalise le plus sur des structures aussi minces que le ruban
+cortical. Le tissu le plus touché est la substance blanche, à $0{,}764$ contre $0{,}796$ pour le
+meilleur sujet ; le LCR, dont la frontière est nettement plus contrastée, reste à $0{,}886$.
+
+Nous ne voyons dans le T1 du sujet 2 rien qui le distingue franchement des autres, ni artefact
+ni mouvement visible, et nous n'avons donc pas d'explication assurée à son rang. Avec dix
+sujets, un dernier de classement à trois centièmes du premier n'appelle de toute façon pas
+d'explication : c'est l'amplitude normale de la variabilité inter-sujets que la
+\figref{fig:ablation} montre par ailleurs.
+
 # Discussion {#sec:discussion}
 
 **Ce qui marche, et pourquoi.** Le fil conducteur de tous nos gains est le même : l'information
@@ -701,20 +751,11 @@ anatomie fausse, la quantification qui ne fait économiser rien — viennent tou
 
 <!--
 ================================================================================
-MARQUEURS RESTANTS — à remplacer depuis report/assets/facts.md ou un JSON de
-results/ avant le rendu final. Ne jamais y écrire une valeur provisoire.
+Plus aucun marqueur en attente : tous les chiffres du rapport viennent de
+report/assets/, régénéré par `make report-assets` depuis results/*.json.
 
-  [[RÉSUMÉ]]                   résumé, à écrire en dernier
-  [[CHIFFRE:dice_final]]       § 1, Dice moyen de la configuration finale figée
-  [[CHIFFRE:parametres_final]] § 1, paramètres de la configuration finale figée
-
-RÉSOLUS le 2026-09-04 :
-  params_publies_min -> 1,55e6, compte exact publié dans wang2019iseg (méthode classée 1re)
-  params_publies_max -> 1e8, ESTIMATION d'ordre de grandeur déduite des architectures
-                        décrites dans wang2019iseg. Doit rester étiquetée « estimation »
-                        dans le texte et sur la figure 4.
-
-À REGÉNÉRER quand la configuration finale sera figée :
-  tableau 1 (§ 2)  <- make report-assets puis python scripts/ratio_argument.py
+À REVOIR si une soumission au serveur du challenge est faite un jour : deux
+passages affirment qu'il n'y en a pas eu, en § Résultats (front de Pareto) et
+en § Discussion (Limites).
 ================================================================================
 -->
